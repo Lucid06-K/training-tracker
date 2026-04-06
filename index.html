@@ -7,10 +7,13 @@
   <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
   <meta name="apple-mobile-web-app-title" content="Training">
   <meta name="theme-color" content="#0f0f0f">
-  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com; img-src 'self' data: blob:;">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline' https://www.gstatic.com; style-src 'self' 'unsafe-inline'; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com; img-src 'self' data: blob:; connect-src 'self' https://firestore.googleapis.com https://*.firebaseio.com https://*.googleapis.com https://identitytoolkit.googleapis.com https://securetoken.googleapis.com;">
   <link rel="manifest" href="manifest.json">
   <link rel="apple-touch-icon" href="apple-touch-icon.png">
   <title>Training Tracker</title>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-app-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-firestore-compat.js"></script>
+  <script src="https://www.gstatic.com/firebasejs/10.12.0/firebase-auth-compat.js"></script>
   <style>
     :root {
       --bg: #0f0f0f;
@@ -327,6 +330,19 @@
       .app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 100vh; }
     }
 
+    .sync-status {
+      display: inline-flex; align-items: center; gap: 6px;
+      font-size: 11px; color: var(--text2); padding: 4px 10px;
+      background: var(--surface2); border-radius: 20px;
+    }
+    .sync-dot {
+      width: 8px; height: 8px; border-radius: 50%;
+    }
+    .sync-dot.connected { background: var(--green); }
+    .sync-dot.syncing { background: var(--orange); animation: pulse 1s infinite; }
+    .sync-dot.offline { background: var(--red); }
+    @keyframes pulse { 0%,100% { opacity: 1; } 50% { opacity: 0.4; } }
+
     ::-webkit-scrollbar { width: 4px; }
     ::-webkit-scrollbar-track { background: transparent; }
     ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
@@ -337,7 +353,12 @@
 <div class="app">
   <div class="header">
     <h1 id="header-title">Training Tracker</h1>
-    <div class="header-sub" id="header-sub"></div>
+    <div style="display:flex;justify-content:space-between;align-items:center">
+      <div class="header-sub" id="header-sub"></div>
+      <div class="sync-status" id="sync-indicator" onclick="showSyncSetup()">
+        <span class="sync-dot offline"></span> Not synced
+      </div>
+    </div>
   </div>
   <div class="content" id="main-content"></div>
   <nav class="nav">
@@ -1509,6 +1530,26 @@ function renderSettings(container, title, sub) {
   </div>`;
 
   html += `<div class="card">
+    <div class="card-title">
+      <span>Cloud Sync</span>
+      <div class="sync-status" id="sync-indicator-settings">
+        <span class="sync-dot ${syncEnabled ? (syncStatus === 'connected' ? 'connected' : syncStatus === 'syncing' ? 'syncing' : 'offline') : 'offline'}"></span>
+        ${syncEnabled ? (syncStatus === 'connected' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing...' : 'Offline') : 'Not synced'}
+      </div>
+    </div>
+    ${syncEnabled
+      ? `<div class="text-sm mb-8">Sync code: <strong>${esc(syncCode)}</strong></div>
+         <div class="text-sm text-muted mb-12">Use this same code on your other devices.</div>
+         <div style="display:flex;gap:8px">
+           <button class="btn btn-sm btn-outline" onclick="pushToCloud()">Force Sync</button>
+           <button class="btn btn-sm btn-danger" onclick="disableSync();render()">Disconnect</button>
+         </div>`
+      : `<div class="text-sm text-muted mb-12">Sync your training data across all your devices.</div>
+         <button class="btn btn-sm" onclick="showSyncSetup()">Set Up Sync</button>`
+    }
+  </div>`;
+
+  html += `<div class="card">
     <div class="card-title">Data</div>
     <div style="display:flex;gap:8px;flex-wrap:wrap">
       <button class="btn btn-sm btn-outline" onclick="exportData()">Export JSON</button>
@@ -1770,6 +1811,175 @@ function showModal(titleText, content) {
 
 function closeModal() {
   document.getElementById('modal-root').innerHTML = '';
+}
+
+// ==================== FIREBASE SYNC ====================
+const firebaseConfig = {
+  apiKey: "AIzaSyA3xnanInh2tu-qIbI6JfWd67UmkyWwBBw",
+  authDomain: "tkwp-f8078.firebaseapp.com",
+  databaseURL: "https://tkwp-f8078-default-rtdb.asia-southeast1.firebasedatabase.app",
+  projectId: "tkwp-f8078",
+  storageBucket: "tkwp-f8078.firebasestorage.app",
+  messagingSenderId: "872556487328",
+  appId: "1:872556487328:web:a7369c363c56d62acd1fc5"
+};
+
+let db = null;
+let syncEnabled = false;
+let syncCode = localStorage.getItem('training_sync_code') || '';
+let syncStatus = 'offline'; // 'connected', 'syncing', 'offline'
+let syncDebounceTimer = null;
+
+try {
+  firebase.initializeApp(firebaseConfig);
+  db = firebase.firestore();
+  if (syncCode) enableSync(syncCode);
+} catch(e) {
+  console.warn('Firebase init failed:', e);
+}
+
+function enableSync(code) {
+  if (!db || !code) return;
+  syncCode = code.trim().toLowerCase();
+  localStorage.setItem('training_sync_code', syncCode);
+  syncEnabled = true;
+  syncStatus = 'syncing';
+  updateSyncIndicator();
+
+  // Pull from cloud first
+  pullFromCloud().then(() => {
+    syncStatus = 'connected';
+    updateSyncIndicator();
+
+    // Listen for real-time changes
+    db.collection('users').doc(syncCode).onSnapshot(doc => {
+      if (!doc.exists) return;
+      const cloudData = doc.data();
+      if (cloudData && cloudData.lastModified > (data._lastModified || 0)) {
+        // Cloud is newer - update local
+        const newData = JSON.parse(cloudData.jsonData);
+        newData._lastModified = cloudData.lastModified;
+        data = newData;
+        localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+        render();
+      }
+    }, err => {
+      console.warn('Sync listener error:', err);
+      syncStatus = 'offline';
+      updateSyncIndicator();
+    });
+  }).catch(err => {
+    console.warn('Initial pull failed:', err);
+    syncStatus = 'offline';
+    updateSyncIndicator();
+  });
+}
+
+function disableSync() {
+  syncCode = '';
+  syncEnabled = false;
+  syncStatus = 'offline';
+  localStorage.removeItem('training_sync_code');
+  updateSyncIndicator();
+  render();
+}
+
+async function pullFromCloud() {
+  if (!db || !syncCode) return;
+  try {
+    const doc = await db.collection('users').doc(syncCode).get();
+    if (doc.exists) {
+      const cloudData = doc.data();
+      if (cloudData && cloudData.jsonData) {
+        const parsed = JSON.parse(cloudData.jsonData);
+        // Merge: cloud data wins if newer, otherwise keep local
+        if (!data._lastModified || cloudData.lastModified > data._lastModified) {
+          parsed._lastModified = cloudData.lastModified;
+          data = parsed;
+          localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+          render();
+        }
+      }
+    } else {
+      // No cloud data yet - push local data up
+      await pushToCloud();
+    }
+  } catch(e) {
+    console.warn('Pull failed:', e);
+  }
+}
+
+async function pushToCloud() {
+  if (!db || !syncCode || !syncEnabled) return;
+  const now = Date.now();
+  data._lastModified = now;
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+
+  try {
+    syncStatus = 'syncing';
+    updateSyncIndicator();
+    await db.collection('users').doc(syncCode).set({
+      jsonData: JSON.stringify(data),
+      lastModified: now,
+      updatedAt: firebase.firestore.FieldValue.serverTimestamp()
+    });
+    syncStatus = 'connected';
+  } catch(e) {
+    console.warn('Push failed:', e);
+    syncStatus = 'offline';
+  }
+  updateSyncIndicator();
+}
+
+// Override saveData to also sync to cloud
+const _origSaveData = saveData;
+saveData = function() {
+  _origSaveData();
+  if (syncEnabled) {
+    clearTimeout(syncDebounceTimer);
+    syncDebounceTimer = setTimeout(pushToCloud, 1500); // Debounce 1.5s
+  }
+};
+
+function updateSyncIndicator() {
+  const el = document.getElementById('sync-indicator');
+  if (!el) return;
+  if (!syncEnabled) {
+    el.innerHTML = '<span class="sync-dot offline"></span> Not synced';
+  } else if (syncStatus === 'connected') {
+    el.innerHTML = '<span class="sync-dot connected"></span> Synced';
+  } else if (syncStatus === 'syncing') {
+    el.innerHTML = '<span class="sync-dot syncing"></span> Syncing...';
+  } else {
+    el.innerHTML = '<span class="sync-dot offline"></span> Offline';
+  }
+}
+
+function showSyncSetup() {
+  showModal('Cloud Sync', `
+    <p class="text-sm text-muted mb-12">Enter a sync code to share data across devices. Use the same code on all your devices.</p>
+    <div class="form-group">
+      <label>Sync Code</label>
+      <input id="sync-code-input" placeholder="e.g., mytraining123" value="${escAttr(syncCode)}">
+    </div>
+    <div class="text-sm text-muted mb-16">Choose something memorable - anyone with this code can access your data.</div>
+    <div style="display:flex;gap:8px">
+      <button class="btn btn-full" onclick="startSync()">Connect</button>
+      ${syncEnabled ? '<button class="btn btn-danger" onclick="disableSync();closeModal()">Disconnect</button>' : ''}
+    </div>
+  `);
+}
+
+function startSync() {
+  const code = document.getElementById('sync-code-input').value.trim();
+  if (!code) return;
+  if (code.length < 4) {
+    document.getElementById('sync-code-input').style.borderColor = 'var(--red)';
+    return;
+  }
+  enableSync(code);
+  closeModal();
+  render();
 }
 
 // ==================== INIT ====================
