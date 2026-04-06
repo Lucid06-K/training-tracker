@@ -1,0 +1,1783 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover">
+  <meta name="apple-mobile-web-app-capable" content="yes">
+  <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent">
+  <meta name="apple-mobile-web-app-title" content="Training">
+  <meta name="theme-color" content="#0f0f0f">
+  <meta http-equiv="Content-Security-Policy" content="default-src 'self'; script-src 'self' 'unsafe-inline'; style-src 'self' 'unsafe-inline'; frame-src https://www.youtube.com https://www.youtube-nocookie.com https://youtube.com; img-src 'self' data: blob:;">
+  <link rel="manifest" href="manifest.json">
+  <link rel="apple-touch-icon" href="apple-touch-icon.png">
+  <title>Training Tracker</title>
+  <style>
+    :root {
+      --bg: #0f0f0f;
+      --surface: #1a1a1a;
+      --surface2: #242424;
+      --surface3: #2e2e2e;
+      --border: #333;
+      --text: #e8e8e8;
+      --text2: #999;
+      --accent: #6c63ff;
+      --accent2: #8b83ff;
+      --green: #4caf50;
+      --orange: #ff9800;
+      --red: #ef5350;
+      --blue: #42a5f5;
+      --radius: 12px;
+      --radius-sm: 8px;
+    }
+
+    * { margin: 0; padding: 0; box-sizing: border-box; }
+
+    body {
+      font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', system-ui, sans-serif;
+      background: var(--bg);
+      color: var(--text);
+      min-height: 100vh;
+      -webkit-font-smoothing: antialiased;
+    }
+
+    .app { max-width: 480px; margin: 0 auto; padding-bottom: 80px; }
+
+    .header {
+      position: sticky; top: 0; z-index: 100;
+      background: rgba(15,15,15,0.85);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      padding: 16px 20px;
+      padding-top: calc(env(safe-area-inset-top, 16px) + 8px);
+      border-bottom: 1px solid var(--border);
+    }
+
+    .header h1 { font-size: 20px; font-weight: 700; }
+    .header-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
+    .content { padding: 16px 20px; }
+
+    .nav {
+      position: fixed; bottom: 0; left: 0; right: 0;
+      background: rgba(15,15,15,0.95);
+      backdrop-filter: blur(20px);
+      -webkit-backdrop-filter: blur(20px);
+      border-top: 1px solid var(--border);
+      display: flex; justify-content: space-around;
+      padding: 8px 0 env(safe-area-inset-bottom, 8px);
+      z-index: 100;
+    }
+
+    .nav-btn {
+      background: none; border: none; color: var(--text2);
+      font-size: 10px; cursor: pointer; padding: 8px 12px;
+      display: flex; flex-direction: column; align-items: center; gap: 4px;
+      transition: color 0.2s;
+    }
+
+    .nav-btn.active { color: var(--accent); }
+    .nav-btn svg { width: 22px; height: 22px; }
+
+    .card {
+      background: var(--surface);
+      border: 1px solid var(--border);
+      border-radius: var(--radius);
+      padding: 16px;
+      margin-bottom: 12px;
+    }
+
+    .card-title {
+      font-size: 14px; font-weight: 600;
+      margin-bottom: 12px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .btn {
+      background: var(--accent);
+      color: white; border: none;
+      padding: 10px 20px;
+      border-radius: var(--radius-sm);
+      font-size: 14px; font-weight: 600;
+      cursor: pointer; transition: all 0.2s;
+    }
+
+    .btn:hover { background: var(--accent2); }
+    .btn-sm { padding: 6px 12px; font-size: 12px; }
+    .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
+    .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
+    .btn-danger { background: var(--red); }
+    .btn-danger:hover { background: #c62828; }
+    .btn-green { background: var(--green); }
+    .btn-green:hover { background: #388e3c; }
+    .btn-full { width: 100%; }
+    .btn-icon {
+      background: none; border: none; color: var(--text2);
+      cursor: pointer; padding: 4px; font-size: 18px;
+      transition: color 0.2s;
+    }
+    .btn-icon:hover { color: var(--text); }
+
+    input, select, textarea {
+      background: var(--surface2);
+      border: 1px solid var(--border);
+      border-radius: var(--radius-sm);
+      color: var(--text);
+      padding: 10px 12px;
+      font-size: 14px;
+      width: 100%;
+      outline: none;
+      transition: border-color 0.2s;
+      font-family: inherit;
+    }
+
+    input:focus, select:focus, textarea:focus { border-color: var(--accent); }
+    textarea { resize: vertical; min-height: 60px; }
+    label { font-size: 12px; color: var(--text2); display: block; margin-bottom: 4px; }
+    .form-group { margin-bottom: 12px; }
+    .form-row { display: flex; gap: 8px; }
+    .form-row > * { flex: 1; }
+
+    .tag {
+      display: inline-block; padding: 4px 10px;
+      border-radius: 20px; font-size: 11px; font-weight: 600;
+    }
+
+    .tag-upper { background: rgba(108,99,255,0.2); color: var(--accent2); }
+    .tag-lower { background: rgba(76,175,80,0.2); color: var(--green); }
+    .tag-endurance { background: rgba(255,152,0,0.2); color: var(--orange); }
+    .tag-sport { background: rgba(66,165,245,0.2); color: var(--blue); }
+    .tag-rest { background: rgba(153,153,153,0.15); color: var(--text2); }
+    .tag-custom { background: rgba(239,83,80,0.2); color: var(--red); }
+
+    .schedule-grid {
+      display: grid; grid-template-columns: repeat(7, 1fr);
+      gap: 6px; margin-bottom: 16px;
+    }
+
+    .schedule-day {
+      text-align: center; padding: 8px 4px;
+      border-radius: var(--radius-sm); background: var(--surface2);
+      cursor: pointer; transition: all 0.2s; border: 2px solid transparent;
+    }
+
+    .schedule-day:hover { border-color: var(--accent); }
+    .schedule-day.today { border-color: var(--accent); }
+    .schedule-day.completed { background: rgba(76,175,80,0.15); border-color: var(--green); }
+    .schedule-day-label { font-size: 10px; color: var(--text2); }
+    .schedule-day-num { font-size: 16px; font-weight: 700; margin-top: 2px; }
+    .schedule-day-dot { width: 6px; height: 6px; border-radius: 50%; margin: 4px auto 0; }
+
+    .exercise-item {
+      background: var(--surface2); border-radius: var(--radius-sm);
+      padding: 12px; margin-bottom: 8px; transition: all 0.2s;
+    }
+
+    .exercise-item.completed-exercise { opacity: 0.6; border-left: 3px solid var(--green); }
+
+    .exercise-name {
+      font-size: 14px; font-weight: 600; margin-bottom: 6px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    .exercise-meta {
+      font-size: 12px; color: var(--text2);
+      display: flex; gap: 12px; flex-wrap: wrap;
+    }
+    .exercise-meta span { white-space: nowrap; }
+
+    .set-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
+    .set-num { font-size: 12px; color: var(--text2); min-width: 20px; text-align: center; }
+    .set-input { width: 70px; padding: 6px 8px; font-size: 13px; text-align: center; }
+
+    .set-check {
+      width: 28px; height: 28px; background: var(--surface3);
+      border: 2px solid var(--border); border-radius: 50%;
+      cursor: pointer; display: flex; align-items: center; justify-content: center;
+      transition: all 0.2s; flex-shrink: 0;
+    }
+
+    .set-check.checked { background: var(--green); border-color: var(--green); }
+    .set-check.checked::after { content: '\2713'; color: white; font-size: 14px; font-weight: 700; }
+
+    .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
+    .stat-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
+
+    .progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
+
+    .tabs { display: flex; gap: 4px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
+    .tab {
+      padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500;
+      background: var(--surface2); border: none; color: var(--text2);
+      cursor: pointer; white-space: nowrap; transition: all 0.2s;
+    }
+    .tab.active { background: var(--accent); color: white; }
+
+    .modal-overlay {
+      position: fixed; inset: 0; background: rgba(0,0,0,0.7);
+      z-index: 200; display: flex; align-items: flex-end; justify-content: center;
+      animation: fadeIn 0.2s;
+    }
+
+    .modal {
+      background: var(--surface); border-radius: var(--radius) var(--radius) 0 0;
+      width: 100%; max-width: 480px; max-height: 85vh;
+      overflow-y: auto; padding: 20px; animation: slideUp 0.3s;
+    }
+
+    .modal-title {
+      font-size: 18px; font-weight: 700; margin-bottom: 16px;
+      display: flex; justify-content: space-between; align-items: center;
+    }
+
+    @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
+    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+
+    .chart-container { background: var(--surface2); border-radius: var(--radius-sm); padding: 16px; margin-bottom: 12px; }
+    .mini-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
+    .chart-bar {
+      flex: 1; background: var(--accent); border-radius: 3px 3px 0 0;
+      min-height: 4px; transition: height 0.3s; position: relative;
+    }
+    .chart-bar:hover { opacity: 0.8; }
+
+    .protein-ring { width: 120px; height: 120px; margin: 0 auto 12px; position: relative; }
+    .protein-ring svg { transform: rotate(-90deg); }
+    .protein-ring-text {
+      position: absolute; inset: 0; display: flex; flex-direction: column;
+      align-items: center; justify-content: center;
+    }
+    .protein-ring-value { font-size: 28px; font-weight: 700; }
+    .protein-ring-label { font-size: 11px; color: var(--text2); }
+
+    .toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
+    .toggle {
+      width: 44px; height: 24px; background: var(--surface3);
+      border-radius: 12px; cursor: pointer; position: relative; transition: background 0.2s;
+    }
+    .toggle.on { background: var(--accent); }
+    .toggle::after {
+      content: ''; position: absolute; width: 20px; height: 20px;
+      border-radius: 50%; background: white; top: 2px; left: 2px; transition: transform 0.2s;
+    }
+    .toggle.on::after { transform: translateX(20px); }
+
+    .timer {
+      font-size: 48px; font-weight: 700; text-align: center;
+      font-variant-numeric: tabular-nums; padding: 20px; color: var(--accent);
+    }
+    .timer-controls { display: flex; gap: 8px; justify-content: center; }
+
+    .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
+    .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
+    .divider { height: 1px; background: var(--border); margin: 16px 0; }
+    .section-title { font-size: 16px; font-weight: 700; margin-bottom: 12px; }
+    .mb-8 { margin-bottom: 8px; }
+    .mb-12 { margin-bottom: 12px; }
+    .mb-16 { margin-bottom: 16px; }
+    .text-center { text-align: center; }
+    .text-sm { font-size: 12px; }
+    .text-muted { color: var(--text2); }
+    .flex-between { display: flex; justify-content: space-between; align-items: center; }
+    .hidden { display: none !important; }
+
+    .meal-item {
+      display: flex; justify-content: space-between; align-items: center;
+      padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px;
+    }
+    .meal-item-name { font-size: 14px; font-weight: 500; }
+    .meal-item-protein { font-size: 14px; font-weight: 700; color: var(--green); }
+
+    .history-item {
+      padding: 12px; background: var(--surface2); border-radius: var(--radius-sm);
+      margin-bottom: 8px; cursor: pointer; transition: all 0.2s;
+    }
+    .history-item:hover { background: var(--surface3); }
+    .history-date { font-size: 12px; color: var(--text2); }
+    .history-title { font-size: 14px; font-weight: 600; margin-top: 2px; }
+    .history-stats { font-size: 12px; color: var(--text2); margin-top: 4px; }
+
+    /* Video player */
+    .video-container {
+      position: relative; width: 100%; padding-bottom: 56.25%;
+      margin-bottom: 12px; border-radius: var(--radius-sm); overflow: hidden;
+      background: #000;
+    }
+    .video-container iframe {
+      position: absolute; top: 0; left: 0; width: 100%; height: 100%; border: 0;
+    }
+    .video-btn {
+      background: none; border: none; cursor: pointer; padding: 2px 6px;
+      color: var(--red); font-size: 16px; transition: color 0.2s;
+      display: inline-flex; align-items: center; gap: 4px;
+    }
+    .video-btn:hover { color: #ff1744; }
+    .video-btn svg { width: 18px; height: 18px; }
+    .video-edit-btn {
+      background: none; border: none; cursor: pointer; padding: 2px;
+      color: var(--text2); font-size: 12px; transition: color 0.2s;
+    }
+    .video-edit-btn:hover { color: var(--accent); }
+    .exercise-actions {
+      display: flex; align-items: center; gap: 4px;
+    }
+
+    @media (min-width: 481px) {
+      .app { border-left: 1px solid var(--border); border-right: 1px solid var(--border); min-height: 100vh; }
+    }
+
+    ::-webkit-scrollbar { width: 4px; }
+    ::-webkit-scrollbar-track { background: transparent; }
+    ::-webkit-scrollbar-thumb { background: var(--border); border-radius: 2px; }
+  </style>
+</head>
+<body>
+
+<div class="app">
+  <div class="header">
+    <h1 id="header-title">Training Tracker</h1>
+    <div class="header-sub" id="header-sub"></div>
+  </div>
+  <div class="content" id="main-content"></div>
+  <nav class="nav">
+    <button class="nav-btn active" data-page="today" onclick="navigate('today')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="10"/><polyline points="12 6 12 12 16 14"/></svg>
+      Today
+    </button>
+    <button class="nav-btn" data-page="history" onclick="navigate('history')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 8v4l3 3"/><path d="M3.05 11a9 9 0 1 1 .5 4"/><polyline points="3 16 3 11 8 11"/></svg>
+      History
+    </button>
+    <button class="nav-btn" data-page="nutrition" onclick="navigate('nutrition')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M18 8h1a4 4 0 0 1 0 8h-1"/><path d="M2 8h16v9a4 4 0 0 1-4 4H6a4 4 0 0 1-4-4V8z"/><line x1="6" y1="1" x2="6" y2="4"/><line x1="10" y1="1" x2="10" y2="4"/><line x1="14" y1="1" x2="14" y2="4"/></svg>
+      Nutrition
+    </button>
+    <button class="nav-btn" data-page="progress" onclick="navigate('progress')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>
+      Progress
+    </button>
+    <button class="nav-btn" data-page="settings" onclick="navigate('settings')">
+      <svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><circle cx="12" cy="12" r="3"/><path d="M12 1v2M12 21v2M4.22 4.22l1.42 1.42M18.36 18.36l1.42 1.42M1 12h2M21 12h2M4.22 19.78l1.42-1.42M18.36 5.64l1.42-1.42"/></svg>
+      Settings
+    </button>
+  </nav>
+</div>
+
+<div id="modal-root"></div>
+
+<script>
+// ==================== SECURITY ====================
+// HTML entity escaping to prevent XSS when rendering user data
+function esc(str) {
+  if (str == null) return '';
+  return String(str)
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;')
+    .replace(/'/g, '&#39;');
+}
+
+// Escape for use inside HTML attribute values (double-quoted)
+function escAttr(str) {
+  return esc(str);
+}
+
+// Validate and sanitise a video URL - only allow YouTube
+function validateVideoUrl(url) {
+  if (!url || typeof url !== 'string') return '';
+  url = url.trim();
+  if (!url) return '';
+  try {
+    const parsed = new URL(url);
+    const validHosts = [
+      'www.youtube.com', 'youtube.com', 'm.youtube.com',
+      'youtu.be', 'www.youtube-nocookie.com'
+    ];
+    if (parsed.protocol !== 'https:' && parsed.protocol !== 'http:') return '';
+    if (!validHosts.includes(parsed.hostname)) return '';
+    return url;
+  } catch (e) {
+    return '';
+  }
+}
+
+// Extract YouTube video ID from any valid YouTube URL format
+function getYouTubeId(url) {
+  if (!url) return null;
+  const validated = validateVideoUrl(url);
+  if (!validated) return null;
+  try {
+    const parsed = new URL(validated);
+    if (parsed.hostname === 'youtu.be') {
+      return parsed.pathname.slice(1).split('/')[0] || null;
+    }
+    if (parsed.pathname.includes('/shorts/')) {
+      return parsed.pathname.split('/shorts/')[1]?.split('/')[0] || null;
+    }
+    return parsed.searchParams.get('v') || null;
+  } catch (e) {
+    return null;
+  }
+}
+
+// Build a safe YouTube embed URL using privacy-enhanced mode
+function getYouTubeEmbedUrl(url) {
+  const id = getYouTubeId(url);
+  if (!id || !/^[a-zA-Z0-9_-]{11}$/.test(id)) return null;
+  return 'https://www.youtube.com/embed/' + id;
+}
+
+// ==================== DATA LAYER ====================
+const STORAGE_KEY = 'training_tracker_v2';
+
+const DEFAULT_CATEGORIES = {
+  'upper': { name: 'Upper Body', color: 'upper' },
+  'lower': { name: 'Lower Body + Core', color: 'lower' },
+  'endurance': { name: 'Endurance + Light', color: 'endurance' },
+  'sport': { name: 'Sport / Activity', color: 'sport' },
+  'rest': { name: 'Rest', color: 'rest' },
+  'custom': { name: 'Custom', color: 'custom' }
+};
+
+const DEFAULT_SCHEDULE = {
+  0: { category: 'endurance', label: 'Gym: Endurance' },
+  1: { category: 'upper', label: 'Gym: Upper Body' },
+  2: { category: 'sport', label: 'Dragon Boating' },
+  3: { category: 'lower', label: 'Gym: Lower + Core' },
+  4: { category: 'sport', label: 'Dragon Boating' },
+  5: { category: 'sport', label: 'Bouldering' },
+  6: { category: 'sport', label: 'Dragon Boating' }
+};
+
+const DEFAULT_WORKOUTS = {
+  'upper': {
+    name: 'Upper Body Strength',
+    sections: [
+      {
+        name: 'Main Exercises',
+        exercises: [
+          { id: 'ub1', name: 'Pec Fly Machine', equipment: 'Pec fly machine', weight: '15-20 kg', sets: 3, reps: '10-12', rest: 60, video: 'https://www.youtube.com/watch?v=Z57CtFmRMxA' },
+          { id: 'ub2', name: 'Barbell Rows', equipment: 'Bar weight', weight: '8-12 kg', sets: 3, reps: '10', rest: 90, video: 'https://www.youtube.com/watch?v=roCP6wCXPqo' },
+          { id: 'ub3', name: 'Overhead Press', equipment: 'Bar weight', weight: '5-8 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=qEwKCR5JCog' },
+          { id: 'ub4', name: 'Lat Pulldown', equipment: 'Lat pulldown', weight: '20-25 kg', sets: 3, reps: '10-12', rest: 60, video: 'https://www.youtube.com/watch?v=CAwf7n6Luuc' },
+          { id: 'ub5', name: 'Rear Delt Fly Machine', equipment: 'Rear delt machine', weight: '10-15 kg', sets: 3, reps: '15', rest: 60, video: 'https://www.youtube.com/watch?v=5YK4bgzXDp0' },
+          { id: 'ub6', name: 'Cable Face Pulls', equipment: 'Cable machine', weight: '5-10 kg', sets: 3, reps: '15', rest: 60, video: 'https://www.youtube.com/watch?v=rep-qVOkqgk' },
+          { id: 'ub7', name: 'Pallof Press', equipment: 'Cable machine', weight: '5-8 kg', sets: 3, reps: '12 each', rest: 60, video: 'https://www.youtube.com/watch?v=AH_QZLm_0-s' },
+        ]
+      },
+      {
+        name: 'Ab Finisher: Top-Down',
+        exercises: [
+          { id: 'uba1', name: 'Cable Crunches', equipment: 'Cable machine', weight: '10-15 kg', sets: 3, reps: '12-15', rest: 45, video: 'https://www.youtube.com/watch?v=AV5PmR3fmuE' },
+          { id: 'uba2', name: 'Hanging Knee Raises', equipment: 'Pull-up bar', weight: 'BW', sets: 3, reps: '10-15', rest: 45, video: 'https://www.youtube.com/watch?v=Pr1ieGZ5atk' },
+          { id: 'uba3', name: 'Plank Shoulder Taps', equipment: 'Yoga mat', weight: 'BW', sets: 3, reps: '20 taps', rest: 45, video: 'https://www.youtube.com/watch?v=LEZq7QEgLbI' },
+        ]
+      },
+      {
+        name: 'Stretch Session',
+        exercises: [
+          { id: 'ubs1', name: 'Doorway Chest Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=WJOEUvr-mMI' },
+          { id: 'ubs2', name: 'Cross-Body Shoulder Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=qGYflbNbaqE' },
+          { id: 'ubs3', name: 'Overhead Tricep Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=OBJF4LNOqHk' },
+          { id: 'ubs4', name: 'Cat-Cow', equipment: '', weight: '', sets: 1, reps: '10 reps', rest: 0, video: 'https://www.youtube.com/watch?v=kqnua4rHVVA' },
+          { id: 'ubs5', name: 'Thread the Needle', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=RbMl0G1JJrA' },
+          { id: 'ubs6', name: 'Child\'s Pose', equipment: '', weight: '', sets: 1, reps: '45s', rest: 0, video: 'https://www.youtube.com/watch?v=2MJGg-dUKh0' },
+        ]
+      }
+    ]
+  },
+  'lower': {
+    name: 'Lower Body + Core',
+    sections: [
+      {
+        name: 'Main Exercises',
+        exercises: [
+          { id: 'lb1', name: 'Leg Press', equipment: 'Leg press machine', weight: '40-60 kg', sets: 3, reps: '10-12', rest: 90, video: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ' },
+          { id: 'lb2', name: 'Barbell Romanian Deadlifts', equipment: 'Bar weight', weight: '8-12 kg', sets: 3, reps: '10', rest: 90, video: 'https://www.youtube.com/watch?v=jEy_czb3RKA' },
+          { id: 'lb3', name: 'Bulgarian Split Squats', equipment: 'Bar weights', weight: '3-5 kg each', sets: 3, reps: '10 each', rest: 90, video: 'https://www.youtube.com/watch?v=2C-uNgKwPLE' },
+          { id: 'lb4', name: 'Leg Curl Machine', equipment: 'Leg curl machine', weight: '15-20 kg', sets: 3, reps: '12', rest: 60, video: 'https://www.youtube.com/watch?v=1Tq3QdYUuHs' },
+          { id: 'lb5', name: 'Leg Extension Machine', equipment: 'Leg extension', weight: '15-20 kg', sets: 3, reps: '12', rest: 60, video: 'https://www.youtube.com/watch?v=YyvSfVjQeL0' },
+          { id: 'lb6', name: 'Calf Raises', equipment: 'Leg press', weight: '40-50 kg', sets: 3, reps: '15', rest: 60, video: 'https://www.youtube.com/watch?v=gwLzBJYoWlI' },
+          { id: 'lb7', name: 'Dead Bugs', equipment: 'Yoga mat', weight: 'BW', sets: 3, reps: '10 each', rest: 30, video: 'https://www.youtube.com/watch?v=I5xbsA71v1A' },
+        ]
+      },
+      {
+        name: 'Ab Finisher: Rotational',
+        exercises: [
+          { id: 'lba1', name: 'Cable Woodchops (High to Low)', equipment: 'Cable machine', weight: '5-10 kg', sets: 3, reps: '12 each', rest: 45, video: 'https://www.youtube.com/watch?v=pAplQXk3dkU' },
+          { id: 'lba2', name: 'Bicycle Crunches (Slow)', equipment: 'Yoga mat', weight: 'BW', sets: 3, reps: '15 each', rest: 45, video: 'https://www.youtube.com/watch?v=9FGilxCbdz8' },
+          { id: 'lba3', name: 'Weighted Sit-Ups', equipment: 'Sit-up chair + bar', weight: '3-5 kg', sets: 3, reps: '12-15', rest: 45, video: 'https://www.youtube.com/watch?v=7TLevjZBGnA' },
+        ]
+      },
+      {
+        name: 'Stretch Session',
+        exercises: [
+          { id: 'lbs1', name: 'Standing Quad Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=YBc4_BNALEI' },
+          { id: 'lbs2', name: 'Kneeling Hip Flexor Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=ePE-MB0ZFlc' },
+          { id: 'lbs3', name: 'Seated Hamstring Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=1elR0KY73mE' },
+          { id: 'lbs4', name: 'Figure-4 Glute Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=dqVTqBJp9oc' },
+          { id: 'lbs5', name: 'Calf Stretch (Wall)', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=5n-yAJ4sEaE' },
+          { id: 'lbs6', name: 'Pigeon Pose', equipment: '', weight: '', sets: 1, reps: '45s each side', rest: 0, video: 'https://www.youtube.com/watch?v=_DAo9JAXKNE' },
+        ]
+      }
+    ]
+  },
+  'endurance': {
+    name: 'Endurance + Light Strength',
+    sections: [
+      {
+        name: 'Cardio Block',
+        exercises: [
+          { id: 'en1', name: 'Matrix ClimbMill', equipment: 'ClimbMill', weight: 'Level 4-6', sets: 1, reps: '20-30 min', rest: 0, video: 'https://www.youtube.com/watch?v=VjPKJkIB00M' },
+        ]
+      },
+      {
+        name: 'Light Accessory Work',
+        exercises: [
+          { id: 'en2', name: 'Lateral Raises', equipment: 'Bar weights', weight: '2-3 kg each', sets: 2, reps: '15', rest: 45, video: 'https://www.youtube.com/watch?v=3VcKaXpzqRo' },
+          { id: 'en3', name: 'Bicep Curls', equipment: 'Bar weights', weight: '5-8 kg', sets: 2, reps: '12', rest: 45, video: 'https://www.youtube.com/watch?v=ykJmrZ5v0Oo' },
+          { id: 'en4', name: 'Tricep Pushdowns', equipment: 'Cable machine', weight: '8-12 kg', sets: 2, reps: '12', rest: 45, video: 'https://www.youtube.com/watch?v=2-LAMcpzODU' },
+        ]
+      },
+      {
+        name: 'Ab Finisher: Anti-Movement',
+        exercises: [
+          { id: 'ena1', name: 'Pallof Press Holds', equipment: 'Cable machine', weight: '5-8 kg', sets: 3, reps: '20s each', rest: 30, video: 'https://www.youtube.com/watch?v=AH_QZLm_0-s' },
+          { id: 'ena2', name: 'Dead Bugs (Slow)', equipment: 'Yoga mat', weight: 'BW', sets: 3, reps: '10 each', rest: 30, video: 'https://www.youtube.com/watch?v=I5xbsA71v1A' },
+          { id: 'ena3', name: 'Weighted Sit-Ups', equipment: 'Sit-up chair + bar', weight: '3-5 kg', sets: 3, reps: '12-15', rest: 45, video: 'https://www.youtube.com/watch?v=7TLevjZBGnA' },
+        ]
+      },
+      {
+        name: 'Stretch Session',
+        exercises: [
+          { id: 'ens1', name: 'Shoulder Dislocates (towel)', equipment: '', weight: '', sets: 1, reps: '10 slow reps', rest: 0, video: 'https://www.youtube.com/watch?v=02HdChcpyBs' },
+          { id: 'ens2', name: 'Doorway Chest Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=WJOEUvr-mMI' },
+          { id: 'ens3', name: 'Forearm/Wrist Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=U3IfgiNlTPU' },
+          { id: 'ens4', name: 'Kneeling Hip Flexor Stretch', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=ePE-MB0ZFlc' },
+          { id: 'ens5', name: 'Seated Spinal Twist', equipment: '', weight: '', sets: 1, reps: '30s each side', rest: 0, video: 'https://www.youtube.com/watch?v=SaxvQGmg2Eo' },
+          { id: 'ens6', name: 'Child\'s Pose', equipment: '', weight: '', sets: 1, reps: '60s', rest: 0, video: 'https://www.youtube.com/watch?v=2MJGg-dUKh0' },
+        ]
+      }
+    ]
+  }
+};
+
+const DEFAULT_PROFILE = {
+  height: 161, weight: 55, proteinMin: 88, proteinMax: 110, unit: 'metric'
+};
+
+function loadData() {
+  try {
+    const raw = localStorage.getItem(STORAGE_KEY);
+    if (raw) return JSON.parse(raw);
+  } catch(e) {}
+  return {
+    profile: { ...DEFAULT_PROFILE },
+    categories: { ...DEFAULT_CATEGORIES },
+    schedule: { ...DEFAULT_SCHEDULE },
+    workouts: JSON.parse(JSON.stringify(DEFAULT_WORKOUTS)),
+    customWorkouts: {},
+    logs: {},
+    nutrition: {},
+    bodyweight: {},
+    settings: {
+      restTimerEnabled: true,
+      restTimerSound: true,
+      darkMode: true,
+      showStretchSection: true,
+    }
+  };
+}
+
+let data = loadData();
+
+function saveData() {
+  localStorage.setItem(STORAGE_KEY, JSON.stringify(data));
+}
+
+// ==================== UTILITY ====================
+function todayStr() { return new Date().toISOString().split('T')[0]; }
+
+function dayOfWeek(dateStr) { return new Date(dateStr + 'T12:00:00').getDay(); }
+
+function formatDate(dateStr) {
+  const d = new Date(dateStr + 'T12:00:00');
+  return d.toLocaleDateString('en-GB', { weekday: 'short', day: 'numeric', month: 'short' });
+}
+
+function getWeekDates(offset = 0) {
+  const today = new Date();
+  const day = today.getDay();
+  const monday = new Date(today);
+  monday.setDate(today.getDate() - ((day + 6) % 7) + offset * 7);
+  const dates = [];
+  for (let i = 0; i < 7; i++) {
+    const d = new Date(monday);
+    d.setDate(monday.getDate() + i);
+    dates.push(d.toISOString().split('T')[0]);
+  }
+  return dates;
+}
+
+function uid() { return Date.now().toString(36) + Math.random().toString(36).slice(2, 6); }
+
+const DAYS = ['Sun','Mon','Tue','Wed','Thu','Fri','Sat'];
+
+// ==================== VIDEO ====================
+function showVideo(workoutKey, exId) {
+  const w = data.workouts[workoutKey] || data.customWorkouts[workoutKey];
+  if (!w) return;
+  let ex = null;
+  for (const sec of w.sections) {
+    ex = sec.exercises.find(e => e.id === exId);
+    if (ex) break;
+  }
+  if (!ex || !ex.video) return;
+
+  const safeUrl = validateVideoUrl(ex.video);
+  if (!safeUrl) return;
+  window.open(safeUrl, '_blank', 'noopener,noreferrer');
+}
+
+function showEditVideoUrl(workoutKey, exId) {
+  const w = data.workouts[workoutKey] || data.customWorkouts[workoutKey];
+  if (!w) return;
+  let ex = null;
+  for (const sec of w.sections) {
+    ex = sec.exercises.find(e => e.id === exId);
+    if (ex) break;
+  }
+  if (!ex) return;
+
+  showModal('Edit Video - ' + esc(ex.name), `
+    <div class="form-group">
+      <label>YouTube URL</label>
+      <input id="edit-video-url" type="url" placeholder="https://www.youtube.com/watch?v=..." value="${escAttr(ex.video || '')}">
+    </div>
+    <div class="text-sm text-muted mb-12">Only YouTube links are accepted for security.</div>
+    <div class="form-row">
+      <button class="btn btn-full" onclick="saveVideoUrl('${escAttr(workoutKey)}','${escAttr(exId)}')">Save</button>
+      ${ex.video ? '<button class="btn btn-danger" onclick="removeVideoUrl(\'' + escAttr(workoutKey) + '\',\'' + escAttr(exId) + '\')">Remove</button>' : ''}
+    </div>
+  `);
+}
+
+function saveVideoUrl(workoutKey, exId) {
+  const url = document.getElementById('edit-video-url').value.trim();
+  const validated = validateVideoUrl(url);
+
+  if (url && !validated) {
+    document.getElementById('edit-video-url').style.borderColor = 'var(--red)';
+    return;
+  }
+
+  const w = data.workouts[workoutKey] || data.customWorkouts[workoutKey];
+  if (!w) return;
+  for (const sec of w.sections) {
+    const ex = sec.exercises.find(e => e.id === exId);
+    if (ex) { ex.video = validated; break; }
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+function removeVideoUrl(workoutKey, exId) {
+  const w = data.workouts[workoutKey] || data.customWorkouts[workoutKey];
+  if (!w) return;
+  for (const sec of w.sections) {
+    const ex = sec.exercises.find(e => e.id === exId);
+    if (ex) { ex.video = ''; break; }
+  }
+  saveData();
+  closeModal();
+  render();
+}
+
+// Find which workout key an exercise belongs to (for video buttons in today view)
+function findWorkoutKeyForExId(exId) {
+  for (const [key, w] of Object.entries(data.workouts)) {
+    for (const sec of w.sections) {
+      if (sec.exercises.find(e => e.id === exId)) return key;
+    }
+  }
+  for (const [key, w] of Object.entries(data.customWorkouts)) {
+    for (const sec of w.sections) {
+      if (sec.exercises.find(e => e.id === exId)) return key;
+    }
+  }
+  return null;
+}
+
+// ==================== NAVIGATION ====================
+let currentPage = 'today';
+let currentDate = todayStr();
+
+function navigate(page) {
+  currentPage = page;
+  document.querySelectorAll('.nav-btn').forEach(b => b.classList.toggle('active', b.dataset.page === page));
+  render();
+}
+
+function render() {
+  const c = document.getElementById('main-content');
+  const sub = document.getElementById('header-sub');
+  const title = document.getElementById('header-title');
+
+  switch(currentPage) {
+    case 'today': renderToday(c, title, sub); break;
+    case 'history': renderHistory(c, title, sub); break;
+    case 'nutrition': renderNutrition(c, title, sub); break;
+    case 'progress': renderProgress(c, title, sub); break;
+    case 'settings': renderSettings(c, title, sub); break;
+  }
+}
+
+// ==================== TODAY PAGE ====================
+function renderToday(container, title, sub) {
+  title.textContent = 'Today\'s Training';
+  sub.textContent = formatDate(currentDate);
+
+  const dow = dayOfWeek(currentDate);
+  const scheduled = data.schedule[dow];
+  const log = data.logs[currentDate] || null;
+
+  let html = '';
+
+  // Week strip
+  const week = getWeekDates();
+  html += '<div class="schedule-grid">';
+  week.forEach(dateStr => {
+    const d = new Date(dateStr + 'T12:00:00');
+    const isToday = dateStr === todayStr();
+    const isSelected = dateStr === currentDate;
+    const hasLog = data.logs[dateStr];
+    const completed = hasLog && hasLog.completed;
+    const dayDow = d.getDay();
+    const sch = data.schedule[dayDow];
+    const cat = sch ? data.categories[sch.category] : null;
+    const dotColor = cat ? `var(--${cat.color === 'upper' ? 'accent' : cat.color === 'lower' ? 'green' : cat.color === 'endurance' ? 'orange' : cat.color === 'sport' ? 'blue' : 'text2'})` : 'transparent';
+
+    html += `<div class="schedule-day ${isToday ? 'today' : ''} ${completed ? 'completed' : ''}"
+              style="${isSelected ? 'background:var(--surface3);' : ''}"
+              onclick="currentDate='${escAttr(dateStr)}';render()">
+      <div class="schedule-day-label">${esc(DAYS[dayDow])}</div>
+      <div class="schedule-day-num">${d.getDate()}</div>
+      <div class="schedule-day-dot" style="background:${dotColor}"></div>
+    </div>`;
+  });
+  html += '</div>';
+
+  if (scheduled) {
+    const cat = data.categories[scheduled.category];
+    html += `<div class="card">
+      <div class="card-title">
+        <span>${esc(scheduled.label)}</span>
+        <span class="tag tag-${escAttr(cat.color)}">${esc(cat.name)}</span>
+      </div>`;
+
+    const template = data.workouts[scheduled.category] || data.customWorkouts[scheduled.category];
+    if (template) {
+      if (!log) {
+        html += `<button class="btn btn-full" onclick="startWorkout('${escAttr(currentDate)}','${escAttr(scheduled.category)}')">Start Workout</button>`;
+      } else {
+        html += renderWorkoutLog(log, currentDate, template);
+      }
+    } else {
+      if (!log) {
+        html += `<button class="btn btn-full" onclick="startSimpleLog('${escAttr(currentDate)}','${escAttr(scheduled.label)}')">Log Activity</button>`;
+      } else {
+        html += `<div class="mb-12">
+          <div class="form-group">
+            <label>Duration (min)</label>
+            <input type="number" value="${esc(log.duration || '')}" onchange="updateLogField('${escAttr(currentDate)}','duration',+this.value)">
+          </div>
+          <div class="form-group">
+            <label>Notes</label>
+            <textarea onchange="updateLogField('${escAttr(currentDate)}','notes',this.value)">${esc(log.notes || '')}</textarea>
+          </div>
+          <div class="form-row">
+            <button class="btn btn-green btn-sm ${log.completed ? '' : 'btn-outline'}" onclick="toggleComplete('${escAttr(currentDate)}')">
+              ${log.completed ? 'Completed' : 'Mark Complete'}
+            </button>
+            <button class="btn btn-danger btn-sm" onclick="deleteLog('${escAttr(currentDate)}')">Delete</button>
+          </div>
+        </div>`;
+      }
+    }
+    html += '</div>';
+  } else {
+    html += '<div class="card"><div class="empty-state"><div class="empty-state-icon">&#128164;</div>Rest Day</div></div>';
+  }
+
+  html += `<button class="btn btn-outline btn-full mb-12" onclick="showQuickAdd('${escAttr(currentDate)}')">+ Log Different Activity</button>`;
+  html += renderRestTimer();
+  container.innerHTML = html;
+}
+
+function renderWorkoutLog(log, dateStr, template) {
+  let html = '';
+  const totalExercises = template.sections.reduce((sum, s) => sum + s.exercises.length, 0);
+  const completedExercises = Object.values(log.exercises || {}).filter(e =>
+    e.sets && e.sets.every(s => s.done)
+  ).length;
+  const pct = totalExercises ? Math.round(completedExercises / totalExercises * 100) : 0;
+
+  html += `<div class="flex-between mb-12">
+    <span class="text-sm text-muted">${completedExercises}/${totalExercises} exercises</span>
+    <span class="text-sm" style="color:var(--accent)">${pct}%</span>
+  </div>
+  <div class="progress-bar mb-16"><div class="progress-fill" style="width:${pct}%;background:var(--accent)"></div></div>`;
+
+  template.sections.forEach((section) => {
+    if (!data.settings.showStretchSection && section.name.toLowerCase().includes('stretch')) return;
+
+    html += `<div class="section-title">${esc(section.name)}</div>`;
+    section.exercises.forEach((ex) => {
+      const exLog = (log.exercises && log.exercises[ex.id]) || { sets: [] };
+      const allDone = exLog.sets.length === ex.sets && exLog.sets.every(s => s.done);
+      const wKey = findWorkoutKeyForExId(ex.id);
+      const hasVideo = ex.video && validateVideoUrl(ex.video);
+
+      html += `<div class="exercise-item ${allDone ? 'completed-exercise' : ''}">
+        <div class="exercise-name">
+          <span>${esc(ex.name)}</span>
+          <div class="exercise-actions">
+            ${hasVideo ? `<button class="video-btn" onclick="showVideo('${escAttr(wKey)}','${escAttr(ex.id)}')" title="Watch tutorial">
+              <svg viewBox="0 0 24 24" fill="currentColor"><path d="M23.498 6.186a3.016 3.016 0 0 0-2.122-2.136C19.505 3.545 12 3.545 12 3.545s-7.505 0-9.377.505A3.017 3.017 0 0 0 .502 6.186C0 8.07 0 12 0 12s0 3.93.502 5.814a3.016 3.016 0 0 0 2.122 2.136c1.871.505 9.376.505 9.376.505s7.505 0 9.377-.505a3.015 3.015 0 0 0 2.122-2.136C24 15.93 24 12 24 12s0-3.93-.502-5.814zM9.545 15.568V8.432L15.818 12l-6.273 3.568z"/></svg>
+            </button>` : ''}
+            <button class="btn-icon" onclick="toggleExerciseExpand('${escAttr(dateStr)}','${escAttr(ex.id)}')">${isExpanded(dateStr, ex.id) ? '&#9650;' : '&#9660;'}</button>
+          </div>
+        </div>
+        <div class="exercise-meta">
+          ${ex.equipment ? `<span>${esc(ex.equipment)}</span>` : ''}
+          <span>${esc(ex.sets + ' x ' + ex.reps)}</span>
+          ${ex.weight ? `<span>${esc(ex.weight)}</span>` : ''}
+          ${ex.rest ? `<span>Rest: ${esc(ex.rest)}s</span>` : ''}
+        </div>`;
+
+      if (isExpanded(dateStr, ex.id)) {
+        html += '<div style="margin-top:10px">';
+        for (let s = 0; s < ex.sets; s++) {
+          const setData = exLog.sets[s] || { weight: '', reps: '', done: false };
+          html += `<div class="set-row">
+            <span class="set-num">${s + 1}</span>
+            <input class="set-input" type="text" placeholder="kg" value="${escAttr(setData.weight)}"
+              onchange="updateSet('${escAttr(dateStr)}','${escAttr(ex.id)}',${s},'weight',this.value)">
+            <input class="set-input" type="text" placeholder="reps" value="${escAttr(setData.reps)}"
+              onchange="updateSet('${escAttr(dateStr)}','${escAttr(ex.id)}',${s},'reps',this.value)">
+            <div class="set-check ${setData.done ? 'checked' : ''}"
+              onclick="toggleSet('${escAttr(dateStr)}','${escAttr(ex.id)}',${s})"></div>
+          </div>`;
+        }
+        html += `<div style="display:flex;gap:6px;margin-top:6px">
+          <button class="btn btn-sm btn-outline" onclick="addExtraSet('${escAttr(dateStr)}','${escAttr(ex.id)}')">+ Set</button>
+          ${ex.sets > 1 ? `<button class="btn btn-sm btn-outline" style="color:var(--red);border-color:var(--red)" onclick="removeSet('${escAttr(dateStr)}','${escAttr(ex.id)}')">- Set</button>` : ''}
+        </div>`;
+        html += '</div>';
+      }
+      html += '</div>';
+    });
+  });
+
+  html += `<div class="form-group" style="margin-top:12px">
+    <label>Workout Notes</label>
+    <textarea onchange="updateLogField('${escAttr(dateStr)}','notes',this.value)">${esc(log.notes || '')}</textarea>
+  </div>
+  <div class="form-row">
+    <button class="btn btn-green ${log.completed ? '' : 'btn-outline'}" onclick="toggleComplete('${escAttr(dateStr)}')">
+      ${log.completed ? 'Completed' : 'Finish Workout'}
+    </button>
+    <button class="btn btn-danger btn-sm" onclick="deleteLog('${escAttr(dateStr)}')">Delete</button>
+  </div>`;
+
+  return html;
+}
+
+// Expanded state (not persisted)
+const expandedExercises = {};
+function isExpanded(date, exId) { return expandedExercises[date + '_' + exId]; }
+function toggleExerciseExpand(date, exId) {
+  expandedExercises[date + '_' + exId] = !expandedExercises[date + '_' + exId];
+  render();
+}
+
+function startWorkout(dateStr, category) {
+  const template = data.workouts[category] || data.customWorkouts[category];
+  if (!template) return;
+  const exercises = {};
+  template.sections.forEach(s => {
+    s.exercises.forEach(ex => {
+      exercises[ex.id] = { sets: Array.from({length: ex.sets}, () => ({weight:'', reps:'', done:false})) };
+    });
+  });
+  data.logs[dateStr] = {
+    workout: category, label: template.name, exercises,
+    notes: '', duration: 0, completed: false, startTime: Date.now()
+  };
+  const firstEx = template.sections[0]?.exercises[0];
+  if (firstEx) expandedExercises[dateStr + '_' + firstEx.id] = true;
+  saveData();
+  render();
+}
+
+function startSimpleLog(dateStr, label) {
+  data.logs[dateStr] = {
+    workout: 'sport', label, exercises: {},
+    notes: '', duration: 0, completed: false, startTime: Date.now()
+  };
+  saveData();
+  render();
+}
+
+function updateSet(dateStr, exId, setIdx, field, value) {
+  const log = data.logs[dateStr];
+  if (!log || !log.exercises[exId]) return;
+  while (log.exercises[exId].sets.length <= setIdx) {
+    log.exercises[exId].sets.push({weight:'', reps:'', done:false});
+  }
+  log.exercises[exId].sets[setIdx][field] = value;
+  saveData();
+}
+
+function toggleSet(dateStr, exId, setIdx) {
+  const log = data.logs[dateStr];
+  if (!log || !log.exercises[exId]) return;
+  while (log.exercises[exId].sets.length <= setIdx) {
+    log.exercises[exId].sets.push({weight:'', reps:'', done:false});
+  }
+  const s = log.exercises[exId].sets[setIdx];
+  s.done = !s.done;
+  if (s.done && data.settings.restTimerEnabled) {
+    const template = data.workouts[log.workout] || data.customWorkouts[log.workout];
+    if (template) {
+      for (const sec of template.sections) {
+        const ex = sec.exercises.find(e => e.id === exId);
+        if (ex && ex.rest > 0) { startRestTimer(ex.rest); break; }
+      }
+    }
+  }
+  saveData();
+  render();
+}
+
+function addExtraSet(dateStr, exId) {
+  const log = data.logs[dateStr];
+  if (!log) return;
+  if (!log.exercises[exId]) log.exercises[exId] = { sets: [] };
+  log.exercises[exId].sets.push({weight:'', reps:'', done:false});
+  const template = data.workouts[log.workout] || data.customWorkouts[log.workout];
+  if (template) {
+    for (const sec of template.sections) {
+      const ex = sec.exercises.find(e => e.id === exId);
+      if (ex) { ex.sets++; break; }
+    }
+  }
+  saveData();
+  render();
+}
+
+function removeSet(dateStr, exId) {
+  const log = data.logs[dateStr];
+  if (!log) return;
+  if (log.exercises[exId] && log.exercises[exId].sets.length > 1) {
+    log.exercises[exId].sets.pop();
+  }
+  const template = data.workouts[log.workout] || data.customWorkouts[log.workout];
+  if (template) {
+    for (const sec of template.sections) {
+      const ex = sec.exercises.find(e => e.id === exId);
+      if (ex && ex.sets > 1) { ex.sets--; break; }
+    }
+  }
+  saveData();
+  render();
+}
+
+function updateLogField(dateStr, field, value) {
+  if (!data.logs[dateStr]) return;
+  data.logs[dateStr][field] = value;
+  saveData();
+}
+
+function toggleComplete(dateStr) {
+  if (!data.logs[dateStr]) return;
+  data.logs[dateStr].completed = !data.logs[dateStr].completed;
+  if (data.logs[dateStr].completed && data.logs[dateStr].startTime) {
+    data.logs[dateStr].duration = Math.round((Date.now() - data.logs[dateStr].startTime) / 60000);
+  }
+  saveData();
+  render();
+}
+
+function deleteLog(dateStr) {
+  if (!confirm('Delete this workout log?')) return;
+  delete data.logs[dateStr];
+  saveData();
+  render();
+}
+
+function showQuickAdd(dateStr) {
+  const allWorkouts = { ...data.workouts, ...data.customWorkouts };
+  let options = '';
+  for (const [key, w] of Object.entries(allWorkouts)) {
+    options += `<option value="${escAttr(key)}">${esc(w.name)}</option>`;
+  }
+  options += '<option value="sport">Sport / Custom Activity</option>';
+
+  showModal('Log Activity', `
+    <div class="form-group">
+      <label>Activity Type</label>
+      <select id="qa-type">${options}</select>
+    </div>
+    <div class="form-group">
+      <label>Custom Label (optional)</label>
+      <input id="qa-label" placeholder="e.g., Morning Run">
+    </div>
+    <button class="btn btn-full" onclick="doQuickAdd('${escAttr(dateStr)}')">Start</button>
+  `);
+}
+
+function doQuickAdd(dateStr) {
+  const type = document.getElementById('qa-type').value;
+  const label = document.getElementById('qa-label').value;
+  if (type === 'sport') {
+    startSimpleLog(dateStr, label || 'Activity');
+  } else {
+    startWorkout(dateStr, type);
+    if (label) data.logs[dateStr].label = label;
+  }
+  closeModal();
+  saveData();
+  render();
+}
+
+// ==================== REST TIMER ====================
+let restTimerInterval = null;
+let restTimerRemaining = 0;
+let restTimerTotal = 0;
+
+function renderRestTimer() {
+  const mins = Math.floor(restTimerRemaining / 60);
+  const secs = restTimerRemaining % 60;
+  const display = `${mins}:${secs.toString().padStart(2,'0')}`;
+  return `<div class="card">
+    <div class="card-title">Rest Timer</div>
+    <div class="timer" id="timer-display">${display}</div>
+    <div class="timer-controls">
+      <button class="btn btn-sm btn-outline" onclick="startRestTimer(30)">30s</button>
+      <button class="btn btn-sm btn-outline" onclick="startRestTimer(45)">45s</button>
+      <button class="btn btn-sm btn-outline" onclick="startRestTimer(60)">60s</button>
+      <button class="btn btn-sm btn-outline" onclick="startRestTimer(90)">90s</button>
+      <button class="btn btn-sm btn-outline" onclick="startRestTimer(120)">2m</button>
+      <button class="btn btn-sm ${restTimerInterval ? 'btn-danger' : 'btn-outline'}" onclick="stopRestTimer()">${restTimerInterval ? 'Stop' : 'Reset'}</button>
+    </div>
+  </div>`;
+}
+
+function startRestTimer(seconds) {
+  stopRestTimer();
+  restTimerRemaining = seconds;
+  restTimerTotal = seconds;
+  restTimerInterval = setInterval(() => {
+    restTimerRemaining--;
+    const el = document.getElementById('timer-display');
+    if (el) {
+      const m = Math.floor(restTimerRemaining / 60);
+      const s = restTimerRemaining % 60;
+      el.textContent = `${m}:${s.toString().padStart(2,'0')}`;
+    }
+    if (restTimerRemaining <= 0) {
+      stopRestTimer();
+      if (data.settings.restTimerSound) {
+        try {
+          const ctx = new (window.AudioContext || window.webkitAudioContext)();
+          [440, 554, 659].forEach((freq, i) => {
+            const osc = ctx.createOscillator();
+            const gain = ctx.createGain();
+            osc.connect(gain);
+            gain.connect(ctx.destination);
+            osc.frequency.value = freq;
+            gain.gain.value = 0.15;
+            osc.start(ctx.currentTime + i * 0.15);
+            osc.stop(ctx.currentTime + i * 0.15 + 0.12);
+          });
+        } catch(e) {}
+      }
+    }
+  }, 1000);
+}
+
+function stopRestTimer() {
+  if (restTimerInterval) { clearInterval(restTimerInterval); restTimerInterval = null; }
+  restTimerRemaining = 0;
+  const el = document.getElementById('timer-display');
+  if (el) el.textContent = '0:00';
+}
+
+// ==================== HISTORY PAGE ====================
+function renderHistory(container, title, sub) {
+  title.textContent = 'History';
+  sub.textContent = '';
+  const logDates = Object.keys(data.logs).sort().reverse();
+
+  let html = `<div class="stat-grid mb-16">
+    <div class="stat-box">
+      <div class="stat-value">${logDates.length}</div>
+      <div class="stat-label">Total Sessions</div>
+    </div>
+    <div class="stat-box">
+      <div class="stat-value">${getStreak()}</div>
+      <div class="stat-label">Current Streak</div>
+    </div>
+  </div>`;
+
+  if (logDates.length === 0) {
+    html += '<div class="empty-state"><div class="empty-state-icon">&#128203;</div>No workouts logged yet</div>';
+  } else {
+    logDates.forEach(dateStr => {
+      const log = data.logs[dateStr];
+      const completedSets = Object.values(log.exercises || {}).reduce((sum, e) => sum + (e.sets || []).filter(s => s.done).length, 0);
+      html += `<div class="history-item" onclick="currentDate='${escAttr(dateStr)}';navigate('today')">
+        <div class="flex-between">
+          <div class="history-date">${esc(formatDate(dateStr))}</div>
+          ${log.completed ? '<span class="tag tag-lower">Done</span>' : '<span class="tag tag-rest">Partial</span>'}
+        </div>
+        <div class="history-title">${esc(log.label || 'Workout')}</div>
+        <div class="history-stats">
+          ${completedSets ? completedSets + ' sets' : ''}
+          ${log.duration ? ' &middot; ' + log.duration + ' min' : ''}
+          ${log.notes ? ' &middot; ' + esc(log.notes.slice(0, 40)) : ''}
+        </div>
+      </div>`;
+    });
+  }
+  container.innerHTML = html;
+}
+
+function getStreak() {
+  let streak = 0;
+  const today = new Date();
+  for (let i = 0; i < 365; i++) {
+    const d = new Date(today);
+    d.setDate(today.getDate() - i);
+    const dateStr = d.toISOString().split('T')[0];
+    const dow = d.getDay();
+    const scheduled = data.schedule[dow];
+    if (!scheduled || scheduled.category === 'rest') continue;
+    if (data.logs[dateStr] && data.logs[dateStr].completed) { streak++; }
+    else if (i > 0) { break; }
+  }
+  return streak;
+}
+
+// ==================== NUTRITION PAGE ====================
+function renderNutrition(container, title, sub) {
+  title.textContent = 'Nutrition';
+  sub.textContent = formatDate(currentDate);
+  const nutri = data.nutrition[currentDate] || { meals: [], waterL: 0 };
+  const totalProtein = nutri.meals.reduce((sum, m) => sum + (m.protein || 0), 0);
+  const target = data.profile.proteinMax || 110;
+  const pct = Math.min(Math.round(totalProtein / target * 100), 100);
+  const circumference = 2 * Math.PI * 50;
+  const offset = circumference - (pct / 100) * circumference;
+
+  let html = `<div class="card text-center">
+    <div class="protein-ring">
+      <svg width="120" height="120" viewBox="0 0 120 120">
+        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--surface3)" stroke-width="8"/>
+        <circle cx="60" cy="60" r="50" fill="none" stroke="var(--green)" stroke-width="8"
+          stroke-dasharray="${circumference}" stroke-dashoffset="${offset}" stroke-linecap="round"/>
+      </svg>
+      <div class="protein-ring-text">
+        <div class="protein-ring-value">${totalProtein}g</div>
+        <div class="protein-ring-label">of ${target}g protein</div>
+      </div>
+    </div>
+    <div class="text-sm text-muted">Target: ${esc(data.profile.proteinMin)}-${esc(data.profile.proteinMax)}g daily</div>
+  </div>`;
+
+  html += `<div class="card">
+    <div class="card-title"><span>Meals</span><button class="btn btn-sm" onclick="showAddMeal()">+ Add</button></div>`;
+
+  if (nutri.meals.length === 0) {
+    html += '<div class="text-sm text-muted text-center" style="padding:16px">No meals logged</div>';
+  } else {
+    nutri.meals.forEach((meal, i) => {
+      html += `<div class="meal-item">
+        <div>
+          <div class="meal-item-name">${esc(meal.name)}</div>
+          <div class="text-sm text-muted">${esc(meal.amount || '')}</div>
+        </div>
+        <div style="display:flex;align-items:center;gap:8px">
+          <span class="meal-item-protein">${esc(meal.protein)}g</span>
+          <button class="btn-icon" onclick="removeMeal(${i})" style="font-size:14px">&#10005;</button>
+        </div>
+      </div>`;
+    });
+  }
+  html += '</div>';
+
+  html += `<div class="card">
+    <div class="card-title">Water</div>
+    <div class="flex-between mb-8">
+      <span class="text-sm">${nutri.waterL || 0}L</span>
+      <span class="text-sm text-muted">Goal: 2.5L</span>
+    </div>
+    <div class="progress-bar mb-8">
+      <div class="progress-fill" style="width:${Math.min((nutri.waterL || 0) / 2.5 * 100, 100)}%;background:var(--blue)"></div>
+    </div>
+    <div style="display:flex;gap:6px">
+      <button class="btn btn-sm btn-outline" onclick="addWater(0.25)">+250ml</button>
+      <button class="btn btn-sm btn-outline" onclick="addWater(0.5)">+500ml</button>
+      <button class="btn btn-sm btn-outline" onclick="addWater(1)">+1L</button>
+      <button class="btn btn-sm btn-outline" onclick="setWater(0)">Reset</button>
+    </div>
+  </div>`;
+
+  const bw = data.bodyweight[currentDate] || '';
+  html += `<div class="card">
+    <div class="card-title">Bodyweight</div>
+    <div class="form-row">
+      <input type="number" step="0.1" placeholder="kg" value="${escAttr(bw)}" onchange="logBodyweight('${escAttr(currentDate)}',+this.value)">
+    </div>
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function showAddMeal() {
+  showModal('Add Meal', `
+    <div class="form-group">
+      <label>Food</label>
+      <input id="meal-name" placeholder="e.g., Chicken breast">
+    </div>
+    <div class="form-row">
+      <div class="form-group">
+        <label>Amount</label>
+        <input id="meal-amount" placeholder="e.g., 150g">
+      </div>
+      <div class="form-group">
+        <label>Protein (g)</label>
+        <input id="meal-protein" type="number" placeholder="46">
+      </div>
+    </div>
+    <div class="text-sm text-muted mb-12">Quick add:</div>
+    <div style="display:flex;gap:6px;flex-wrap:wrap;margin-bottom:16px">
+      <button class="btn btn-sm btn-outline" onclick="quickMeal('Chicken Breast 150g','150g',46)">Chicken 150g (46g)</button>
+      <button class="btn btn-sm btn-outline" onclick="quickMeal('Greek Yogurt 200g','200g',20)">Greek Yogurt (20g)</button>
+      <button class="btn btn-sm btn-outline" onclick="quickMeal('Eggs x3','3 eggs',18)">3 Eggs (18g)</button>
+      <button class="btn btn-sm btn-outline" onclick="quickMeal('Protein Shake','1 scoop',25)">Protein Shake (25g)</button>
+    </div>
+    <button class="btn btn-full" onclick="addMeal()">Add Meal</button>
+  `);
+}
+
+function quickMeal(name, amount, protein) {
+  document.getElementById('meal-name').value = name;
+  document.getElementById('meal-amount').value = amount;
+  document.getElementById('meal-protein').value = protein;
+}
+
+function addMeal() {
+  const name = document.getElementById('meal-name').value.trim();
+  const amount = document.getElementById('meal-amount').value.trim();
+  const protein = parseFloat(document.getElementById('meal-protein').value) || 0;
+  if (!name) return;
+  if (!data.nutrition[currentDate]) data.nutrition[currentDate] = { meals: [], waterL: 0 };
+  data.nutrition[currentDate].meals.push({ name, amount, protein, time: new Date().toTimeString().slice(0,5) });
+  saveData();
+  closeModal();
+  render();
+}
+
+function removeMeal(idx) {
+  if (!data.nutrition[currentDate]) return;
+  data.nutrition[currentDate].meals.splice(idx, 1);
+  saveData();
+  render();
+}
+
+function addWater(liters) {
+  if (!data.nutrition[currentDate]) data.nutrition[currentDate] = { meals: [], waterL: 0 };
+  data.nutrition[currentDate].waterL = Math.round((data.nutrition[currentDate].waterL + liters) * 100) / 100;
+  saveData();
+  render();
+}
+
+function setWater(val) {
+  if (!data.nutrition[currentDate]) data.nutrition[currentDate] = { meals: [], waterL: 0 };
+  data.nutrition[currentDate].waterL = val;
+  saveData();
+  render();
+}
+
+function logBodyweight(dateStr, val) {
+  data.bodyweight[dateStr] = val;
+  saveData();
+}
+
+// ==================== PROGRESS PAGE ====================
+function renderProgress(container, title, sub) {
+  title.textContent = 'Progress';
+  sub.textContent = '';
+  const logDates = Object.keys(data.logs).sort();
+  const totalCompleted = logDates.filter(d => data.logs[d].completed).length;
+
+  let html = `<div class="stat-grid mb-16">
+    <div class="stat-box"><div class="stat-value">${totalCompleted}</div><div class="stat-label">Workouts Done</div></div>
+    <div class="stat-box"><div class="stat-value">${getStreak()}</div><div class="stat-label">Day Streak</div></div>
+    <div class="stat-box"><div class="stat-value">${getThisWeekCount()}</div><div class="stat-label">This Week</div></div>
+    <div class="stat-box"><div class="stat-value">${getTotalVolume()}</div><div class="stat-label">Total Vol (kg)</div></div>
+  </div>`;
+
+  html += `<div class="card">
+    <div class="card-title">Weekly Activity (last 8 weeks)</div>
+    <div class="mini-chart">`;
+  for (let w = 7; w >= 0; w--) {
+    const weekDates = getWeekDates(-w);
+    const count = weekDates.filter(d => data.logs[d] && data.logs[d].completed).length;
+    const pct = Math.max(count / 7 * 100, 5);
+    html += `<div class="chart-bar" style="height:${pct}%" title="Week -${w}: ${count} sessions"></div>`;
+  }
+  html += '</div></div>';
+
+  html += '<div class="section-title">Exercise Progress</div>';
+  html += `<div class="tabs">
+    <button class="tab ${progressTab === 'upper' ? 'active' : ''}" onclick="progressTab='upper';render()">Upper</button>
+    <button class="tab ${progressTab === 'lower' ? 'active' : ''}" onclick="progressTab='lower';render()">Lower</button>
+    <button class="tab ${progressTab === 'endurance' ? 'active' : ''}" onclick="progressTab='endurance';render()">Endurance</button>
+    <button class="tab ${progressTab === 'bodyweight' ? 'active' : ''}" onclick="progressTab='bodyweight';render()">Bodyweight</button>
+  </div>`;
+
+  if (progressTab === 'bodyweight') {
+    const bwDates = Object.keys(data.bodyweight).sort().slice(-14);
+    if (bwDates.length > 0) {
+      const vals = bwDates.map(d => data.bodyweight[d]);
+      const min = Math.min(...vals) - 1;
+      const max = Math.max(...vals) + 1;
+      const range = max - min || 1;
+      html += '<div class="chart-container"><div class="mini-chart">';
+      bwDates.forEach(d => {
+        const pct = Math.max(((data.bodyweight[d] - min) / range) * 100, 5);
+        html += `<div class="chart-bar" style="height:${pct}%;background:var(--orange)" title="${esc(d)}: ${data.bodyweight[d]}kg"></div>`;
+      });
+      html += '</div></div>';
+      html += `<div class="text-sm text-muted text-center">Latest: ${vals[vals.length-1]}kg | Range: ${Math.min(...vals)}-${Math.max(...vals)}kg</div>`;
+    } else {
+      html += '<div class="text-sm text-muted text-center" style="padding:20px">Log bodyweight in Nutrition tab</div>';
+    }
+  } else {
+    const template = data.workouts[progressTab];
+    if (template) {
+      const mainExercises = template.sections[0]?.exercises || [];
+      mainExercises.slice(0, 4).forEach(ex => {
+        const history = getExerciseHistory(ex.id);
+        html += `<div class="card"><div class="card-title">${esc(ex.name)}</div>`;
+        if (history.length > 0) {
+          html += '<div class="mini-chart" style="height:60px">';
+          const maxW = Math.max(...history.map(h => h.maxWeight || 1));
+          history.slice(-10).forEach(h => {
+            const pct = Math.max((h.maxWeight / maxW) * 100, 8);
+            html += `<div class="chart-bar" style="height:${pct}%;background:var(--green)" title="${esc(h.date)}: ${h.maxWeight}kg x ${esc(h.bestReps)}"></div>`;
+          });
+          html += '</div>';
+          const latest = history[history.length - 1];
+          html += `<div class="text-sm text-muted" style="margin-top:6px">Best: ${latest.maxWeight}kg x ${esc(latest.bestReps)}</div>`;
+        } else {
+          html += '<div class="text-sm text-muted text-center" style="padding:12px">No data yet</div>';
+        }
+        html += '</div>';
+      });
+    }
+  }
+  container.innerHTML = html;
+}
+
+let progressTab = 'upper';
+
+function getThisWeekCount() { return getWeekDates().filter(d => data.logs[d] && data.logs[d].completed).length; }
+
+function getTotalVolume() {
+  let total = 0;
+  Object.values(data.logs).forEach(log => {
+    Object.values(log.exercises || {}).forEach(ex => {
+      (ex.sets || []).forEach(s => {
+        if (s.done && s.weight && s.reps) {
+          total += (parseFloat(s.weight) || 0) * (parseInt(s.reps) || 0);
+        }
+      });
+    });
+  });
+  return total > 1000 ? Math.round(total / 1000) + 'k' : Math.round(total);
+}
+
+function getExerciseHistory(exId) {
+  const history = [];
+  Object.keys(data.logs).sort().forEach(dateStr => {
+    const log = data.logs[dateStr];
+    const exLog = log.exercises && log.exercises[exId];
+    if (exLog && exLog.sets) {
+      const doneSets = exLog.sets.filter(s => s.done);
+      if (doneSets.length > 0) {
+        const maxWeight = Math.max(...doneSets.map(s => parseFloat(s.weight) || 0));
+        const bestSet = doneSets.reduce((best, s) => {
+          return (parseFloat(s.weight) || 0) >= (parseFloat(best.weight) || 0) ? s : best;
+        }, doneSets[0]);
+        history.push({ date: dateStr, maxWeight, bestReps: bestSet.reps || '0', totalSets: doneSets.length });
+      }
+    }
+  });
+  return history;
+}
+
+// ==================== SETTINGS PAGE ====================
+function renderSettings(container, title, sub) {
+  title.textContent = 'Settings';
+  sub.textContent = '';
+  let html = '';
+
+  html += `<div class="card">
+    <div class="card-title">Profile</div>
+    <div class="form-row mb-8">
+      <div class="form-group"><label>Height (cm)</label><input type="number" value="${esc(data.profile.height)}" onchange="data.profile.height=+this.value;saveData()"></div>
+      <div class="form-group"><label>Weight (kg)</label><input type="number" value="${esc(data.profile.weight)}" onchange="data.profile.weight=+this.value;saveData()"></div>
+    </div>
+    <div class="form-row">
+      <div class="form-group"><label>Protein Min (g)</label><input type="number" value="${esc(data.profile.proteinMin)}" onchange="data.profile.proteinMin=+this.value;saveData()"></div>
+      <div class="form-group"><label>Protein Max (g)</label><input type="number" value="${esc(data.profile.proteinMax)}" onchange="data.profile.proteinMax=+this.value;saveData()"></div>
+    </div>
+  </div>`;
+
+  html += `<div class="card"><div class="card-title">Weekly Schedule</div>`;
+  for (let dow = 0; dow < 7; dow++) {
+    const sch = data.schedule[dow] || {};
+    html += `<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <span style="min-width:40px">${esc(DAYS[dow])}</span>
+      <input style="flex:1;margin:0 8px" value="${escAttr(sch.label || '')}" placeholder="Activity name"
+        onchange="updateSchedule(${dow},'label',this.value)">
+      <select style="width:120px" onchange="updateSchedule(${dow},'category',this.value)">
+        ${Object.entries(data.categories).map(([k,v]) =>
+          `<option value="${escAttr(k)}" ${sch.category === k ? 'selected' : ''}>${esc(v.name)}</option>`
+        ).join('')}
+      </select>
+    </div>`;
+  }
+  html += '</div>';
+
+  html += `<div class="card">
+    <div class="card-title"><span>Workout Templates</span><button class="btn btn-sm" onclick="showCreateWorkout()">+ New</button></div>`;
+  const all = { ...data.workouts, ...data.customWorkouts };
+  for (const [key, w] of Object.entries(all)) {
+    const exCount = w.sections.reduce((s, sec) => s + sec.exercises.length, 0);
+    html += `<div class="flex-between" style="padding:10px 0;border-bottom:1px solid var(--border)">
+      <div>
+        <div style="font-weight:600;font-size:14px">${esc(w.name)}</div>
+        <div class="text-sm text-muted">${w.sections.length} sections, ${exCount} exercises</div>
+      </div>
+      <div style="display:flex;gap:4px">
+        <button class="btn btn-sm btn-outline" onclick="editWorkout('${escAttr(key)}')">Edit</button>
+        ${data.customWorkouts[key] ? `<button class="btn btn-sm btn-danger" onclick="deleteWorkout('${escAttr(key)}')">Del</button>` : ''}
+      </div>
+    </div>`;
+  }
+  html += '</div>';
+
+  html += `<div class="card">
+    <div class="card-title"><span>Categories</span><button class="btn btn-sm" onclick="showAddCategory()">+ Add</button></div>`;
+  for (const [key, cat] of Object.entries(data.categories)) {
+    html += `<div class="flex-between" style="padding:8px 0;border-bottom:1px solid var(--border)">
+      <span class="tag tag-${escAttr(cat.color)}">${esc(cat.name)}</span>
+      <button class="btn-icon" onclick="editCategory('${escAttr(key)}')" style="font-size:14px">&#9998;</button>
+    </div>`;
+  }
+  html += '</div>';
+
+  html += `<div class="card">
+    <div class="card-title">Preferences</div>
+    <div class="toggle-wrap"><span>Auto rest timer</span>
+      <div class="toggle ${data.settings.restTimerEnabled ? 'on' : ''}" onclick="data.settings.restTimerEnabled=!data.settings.restTimerEnabled;saveData();render()"></div>
+    </div>
+    <div class="toggle-wrap"><span>Timer sound</span>
+      <div class="toggle ${data.settings.restTimerSound ? 'on' : ''}" onclick="data.settings.restTimerSound=!data.settings.restTimerSound;saveData();render()"></div>
+    </div>
+    <div class="toggle-wrap"><span>Show stretch sections</span>
+      <div class="toggle ${data.settings.showStretchSection ? 'on' : ''}" onclick="data.settings.showStretchSection=!data.settings.showStretchSection;saveData();render()"></div>
+    </div>
+  </div>`;
+
+  html += `<div class="card">
+    <div class="card-title">Data</div>
+    <div style="display:flex;gap:8px;flex-wrap:wrap">
+      <button class="btn btn-sm btn-outline" onclick="exportData()">Export JSON</button>
+      <button class="btn btn-sm btn-outline" onclick="document.getElementById('import-file').click()">Import JSON</button>
+      <button class="btn btn-sm btn-danger" onclick="resetData()">Reset All</button>
+    </div>
+    <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(this)">
+  </div>`;
+
+  container.innerHTML = html;
+}
+
+function updateSchedule(dow, field, value) {
+  if (!data.schedule[dow]) data.schedule[dow] = { category: 'rest', label: '' };
+  data.schedule[dow][field] = value;
+  saveData();
+}
+
+// ==================== WORKOUT EDITOR ====================
+function editWorkout(key) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (!w) return;
+
+  let sectionsHtml = '';
+  w.sections.forEach((sec, si) => {
+    sectionsHtml += `<div style="margin-bottom:16px">
+      <div class="flex-between mb-8">
+        <input value="${escAttr(sec.name)}" style="font-weight:600" onchange="updateSectionName('${escAttr(key)}',${si},this.value)">
+        <button class="btn-icon" onclick="deleteSection('${escAttr(key)}',${si})" style="font-size:14px;color:var(--red)">&#10005;</button>
+      </div>`;
+
+    sec.exercises.forEach((ex, ei) => {
+      const hasVideo = ex.video && validateVideoUrl(ex.video);
+      sectionsHtml += `<div class="exercise-item">
+        <div class="form-group">
+          <input value="${escAttr(ex.name)}" placeholder="Exercise name" onchange="updateExercise('${escAttr(key)}',${si},${ei},'name',this.value)">
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Equipment</label><input value="${escAttr(ex.equipment)}" onchange="updateExercise('${escAttr(key)}',${si},${ei},'equipment',this.value)"></div>
+          <div class="form-group"><label>Weight</label><input value="${escAttr(ex.weight)}" onchange="updateExercise('${escAttr(key)}',${si},${ei},'weight',this.value)"></div>
+        </div>
+        <div class="form-row">
+          <div class="form-group"><label>Sets</label><input type="number" value="${esc(ex.sets)}" onchange="updateExercise('${escAttr(key)}',${si},${ei},'sets',+this.value)"></div>
+          <div class="form-group"><label>Reps</label><input value="${escAttr(ex.reps)}" onchange="updateExercise('${escAttr(key)}',${si},${ei},'reps',this.value)"></div>
+          <div class="form-group"><label>Rest (s)</label><input type="number" value="${esc(ex.rest)}" onchange="updateExercise('${escAttr(key)}',${si},${ei},'rest',+this.value)"></div>
+        </div>
+        <div class="form-group">
+          <label>Video URL</label>
+          <div class="form-row">
+            <input value="${escAttr(ex.video || '')}" placeholder="https://youtube.com/watch?v=..." onchange="updateExercise('${escAttr(key)}',${si},${ei},'video',this.value)">
+            ${hasVideo ? `<button class="btn btn-sm btn-outline" style="flex:0 0 auto;width:auto" onclick="showVideo('${escAttr(key)}','${escAttr(ex.id)}')">Test</button>` : ''}
+          </div>
+          ${ex.video && !hasVideo ? '<div class="text-sm" style="color:var(--red);margin-top:4px">Invalid URL - only YouTube links allowed</div>' : ''}
+        </div>
+        <button class="btn-icon" onclick="deleteExercise('${escAttr(key)}',${si},${ei})" style="color:var(--red);font-size:12px">Remove</button>
+      </div>`;
+    });
+
+    sectionsHtml += `<button class="btn btn-sm btn-outline btn-full" onclick="addExerciseToSection('${escAttr(key)}',${si})">+ Add Exercise</button></div>`;
+  });
+
+  showModal('Edit: ' + esc(w.name), `
+    <div class="form-group">
+      <label>Workout Name</label>
+      <input id="edit-wk-name" value="${escAttr(w.name)}" onchange="updateWorkoutName('${escAttr(key)}',this.value)">
+    </div>
+    <div class="divider"></div>
+    ${sectionsHtml}
+    <button class="btn btn-outline btn-full mb-12" onclick="addSection('${escAttr(key)}')">+ Add Section</button>
+    <button class="btn btn-full" onclick="closeModal()">Done</button>
+  `);
+}
+
+function updateWorkoutName(key, name) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w) { w.name = name; saveData(); }
+}
+
+function updateSectionName(key, si, name) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w && w.sections[si]) { w.sections[si].name = name; saveData(); }
+}
+
+function updateExercise(key, si, ei, field, value) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w && w.sections[si] && w.sections[si].exercises[ei]) {
+    if (field === 'video') {
+      value = value.trim();
+      if (value && !validateVideoUrl(value)) {
+        // Store raw so user can see what they typed, but it won't embed
+        w.sections[si].exercises[ei][field] = value;
+      } else {
+        w.sections[si].exercises[ei][field] = validateVideoUrl(value);
+      }
+    } else {
+      w.sections[si].exercises[ei][field] = value;
+    }
+    saveData();
+  }
+}
+
+function deleteExercise(key, si, ei) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w && w.sections[si]) { w.sections[si].exercises.splice(ei, 1); saveData(); editWorkout(key); }
+}
+
+function addExerciseToSection(key, si) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w && w.sections[si]) {
+    w.sections[si].exercises.push({
+      id: uid(), name: 'New Exercise', equipment: '', weight: '',
+      sets: 3, reps: '10', rest: 60, video: ''
+    });
+    saveData();
+    editWorkout(key);
+  }
+}
+
+function addSection(key) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w) { w.sections.push({ name: 'New Section', exercises: [] }); saveData(); editWorkout(key); }
+}
+
+function deleteSection(key, si) {
+  const w = data.workouts[key] || data.customWorkouts[key];
+  if (w) { w.sections.splice(si, 1); saveData(); editWorkout(key); }
+}
+
+function showCreateWorkout() {
+  showModal('New Workout', `
+    <div class="form-group"><label>Workout Name</label><input id="new-wk-name" placeholder="e.g., Full Body"></div>
+    <div class="form-group"><label>Category</label>
+      <select id="new-wk-cat">
+        ${Object.entries(data.categories).map(([k,v]) => `<option value="${escAttr(k)}">${esc(v.name)}</option>`).join('')}
+      </select>
+    </div>
+    <button class="btn btn-full" onclick="createWorkout()">Create</button>
+  `);
+}
+
+function createWorkout() {
+  const name = document.getElementById('new-wk-name').value.trim();
+  if (!name) return;
+  const key = uid();
+  data.customWorkouts[key] = { name, sections: [{ name: 'Main Exercises', exercises: [] }] };
+  saveData();
+  closeModal();
+  editWorkout(key);
+}
+
+function deleteWorkout(key) {
+  if (!confirm('Delete this workout template?')) return;
+  delete data.customWorkouts[key];
+  saveData();
+  render();
+}
+
+function showAddCategory() {
+  showModal('Add Category', `
+    <div class="form-group"><label>Category Name</label><input id="cat-name" placeholder="e.g., Flexibility"></div>
+    <div class="form-group"><label>Color</label>
+      <select id="cat-color">
+        <option value="upper">Purple</option><option value="lower">Green</option>
+        <option value="endurance">Orange</option><option value="sport">Blue</option>
+        <option value="rest">Grey</option><option value="custom">Red</option>
+      </select>
+    </div>
+    <button class="btn btn-full" onclick="addCategory()">Add</button>
+  `);
+}
+
+function addCategory() {
+  const name = document.getElementById('cat-name').value.trim();
+  const color = document.getElementById('cat-color').value;
+  if (!name) return;
+  data.categories[uid()] = { name, color };
+  saveData();
+  closeModal();
+  render();
+}
+
+function editCategory(key) {
+  const cat = data.categories[key];
+  showModal('Edit Category', `
+    <div class="form-group"><label>Name</label><input id="cat-edit-name" value="${escAttr(cat.name)}"></div>
+    <div class="form-group"><label>Color</label>
+      <select id="cat-edit-color">
+        <option value="upper" ${cat.color==='upper'?'selected':''}>Purple</option>
+        <option value="lower" ${cat.color==='lower'?'selected':''}>Green</option>
+        <option value="endurance" ${cat.color==='endurance'?'selected':''}>Orange</option>
+        <option value="sport" ${cat.color==='sport'?'selected':''}>Blue</option>
+        <option value="rest" ${cat.color==='rest'?'selected':''}>Grey</option>
+        <option value="custom" ${cat.color==='custom'?'selected':''}>Red</option>
+      </select>
+    </div>
+    <button class="btn btn-full" onclick="saveCategoryEdit('${escAttr(key)}')">Save</button>
+  `);
+}
+
+function saveCategoryEdit(key) {
+  data.categories[key].name = document.getElementById('cat-edit-name').value;
+  data.categories[key].color = document.getElementById('cat-edit-color').value;
+  saveData();
+  closeModal();
+  render();
+}
+
+function exportData() {
+  const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
+  const url = URL.createObjectURL(blob);
+  const a = document.createElement('a');
+  a.href = url;
+  a.download = `training-data-${todayStr()}.json`;
+  a.click();
+  URL.revokeObjectURL(url);
+}
+
+function importData(input) {
+  const file = input.files[0];
+  if (!file) return;
+  const reader = new FileReader();
+  reader.onload = e => {
+    try {
+      const imported = JSON.parse(e.target.result);
+      if (imported.profile && imported.logs) {
+        data = imported;
+        saveData();
+        render();
+      } else {
+        alert('Invalid data file');
+      }
+    } catch(e) { alert('Error reading file'); }
+  };
+  reader.readAsText(file);
+}
+
+function resetData() {
+  if (!confirm('This will delete ALL your data. Are you sure?')) return;
+  if (!confirm('Really? This cannot be undone.')) return;
+  localStorage.removeItem(STORAGE_KEY);
+  data = loadData();
+  saveData();
+  render();
+}
+
+// ==================== MODAL ====================
+function showModal(titleText, content) {
+  document.getElementById('modal-root').innerHTML = `
+    <div class="modal-overlay" onclick="if(event.target===this)closeModal()">
+      <div class="modal">
+        <div class="modal-title">
+          <span>${titleText}</span>
+          <button class="btn-icon" onclick="closeModal()" style="font-size:20px">&times;</button>
+        </div>
+        ${content}
+      </div>
+    </div>`;
+}
+
+function closeModal() {
+  document.getElementById('modal-root').innerHTML = '';
+}
+
+// ==================== INIT ====================
+if ('serviceWorker' in navigator) {
+  navigator.serviceWorker.register('sw.js');
+}
+
+render();
+</script>
+</body>
+</html>
