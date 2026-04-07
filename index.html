@@ -29,14 +29,18 @@
     .header h1 { font-size: 20px; font-weight: 700; }
     .header-sub { font-size: 12px; color: var(--text2); margin-top: 2px; }
     .content { padding: 16px 20px; }
+    .content.page-enter { animation: fadeInUp 0.25s ease both; }
     .nav { position: fixed; bottom: 0; left: 0; right: 0; background: rgba(15,15,15,0.95); backdrop-filter: blur(20px); -webkit-backdrop-filter: blur(20px); border-top: 1px solid var(--border); display: flex; justify-content: space-around; padding: 8px 0 env(safe-area-inset-bottom, 8px); z-index: 100; }
-    .nav-btn { background: none; border: none; color: var(--text2); font-size: 10px; cursor: pointer; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: color 0.2s; }
+    .nav-btn { background: none; border: none; color: var(--text2); font-size: 10px; cursor: pointer; padding: 8px 12px; display: flex; flex-direction: column; align-items: center; gap: 4px; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
+    .nav-btn:active { transform: scale(0.9); }
     .nav-btn.active { color: var(--accent); }
-    .nav-btn svg { width: 22px; height: 22px; }
-    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; }
+    .nav-btn.active svg { filter: drop-shadow(0 0 6px rgba(108,99,255,0.5)); }
+    .nav-btn svg { width: 22px; height: 22px; transition: all 0.25s; }
+    .card { background: var(--surface); border: 1px solid var(--border); border-radius: var(--radius); padding: 16px; margin-bottom: 12px; animation: fadeInUp 0.35s ease both; }
     .card-title { font-size: 14px; font-weight: 600; margin-bottom: 12px; display: flex; justify-content: space-between; align-items: center; }
-    .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.2s; }
-    .btn:hover { background: var(--accent2); }
+    .btn { background: var(--accent); color: white; border: none; padding: 10px 20px; border-radius: var(--radius-sm); font-size: 14px; font-weight: 600; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); }
+    .btn:hover { background: var(--accent2); transform: translateY(-1px); box-shadow: 0 4px 12px rgba(108,99,255,0.3); }
+    .btn:active { transform: translateY(0) scale(0.97); box-shadow: none; }
     .btn-sm { padding: 6px 12px; font-size: 12px; }
     .btn-outline { background: transparent; border: 1px solid var(--border); color: var(--text); }
     .btn-outline:hover { border-color: var(--accent); color: var(--accent); background: transparent; }
@@ -52,7 +56,7 @@
     .form-group { margin-bottom: 12px; }
     .form-row { display: flex; gap: 8px; }
     .form-row > * { flex: 1; }
-    .tag { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; }
+    .tag { display: inline-block; padding: 4px 10px; border-radius: 20px; font-size: 11px; font-weight: 600; transition: all 0.2s; animation: fadeInScale 0.3s ease both; }
     .tag-upper { background: rgba(108,99,255,0.2); color: var(--accent2); }
     .tag-lower { background: rgba(76,175,80,0.2); color: var(--green); }
     .tag-endurance { background: rgba(255,152,0,0.2); color: var(--orange); }
@@ -60,51 +64,74 @@
     .tag-rest { background: rgba(153,153,153,0.15); color: var(--text2); }
     .tag-custom { background: rgba(239,83,80,0.2); color: var(--red); }
     .schedule-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 6px; margin-bottom: 16px; }
-    .schedule-day { text-align: center; padding: 8px 4px; border-radius: var(--radius-sm); background: var(--surface2); cursor: pointer; transition: all 0.2s; border: 2px solid transparent; }
-    .schedule-day:hover { border-color: var(--accent); }
+    .schedule-day { text-align: center; padding: 8px 4px; border-radius: var(--radius-sm); background: var(--surface2); cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); border: 2px solid transparent; animation: fadeInScale 0.3s ease both; }
+    .schedule-day:nth-child(1) { animation-delay: 0.02s; } .schedule-day:nth-child(2) { animation-delay: 0.04s; } .schedule-day:nth-child(3) { animation-delay: 0.06s; } .schedule-day:nth-child(4) { animation-delay: 0.08s; } .schedule-day:nth-child(5) { animation-delay: 0.1s; } .schedule-day:nth-child(6) { animation-delay: 0.12s; } .schedule-day:nth-child(7) { animation-delay: 0.14s; }
+    .schedule-day:hover { border-color: var(--accent); transform: translateY(-2px); }
+    .schedule-day:active { transform: scale(0.95); }
     .schedule-day.today { border-color: var(--accent); }
     .schedule-day.completed { background: rgba(76,175,80,0.15); border-color: var(--green); }
     .schedule-day-label { font-size: 10px; color: var(--text2); }
     .schedule-day-num { font-size: 16px; font-weight: 700; margin-top: 2px; }
     .schedule-day-dot { width: 6px; height: 6px; border-radius: 50%; margin: 4px auto 0; }
-    .exercise-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; transition: all 0.2s; }
-    .exercise-item.completed-exercise { opacity: 0.6; border-left: 3px solid var(--green); }
+    .exercise-item { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; margin-bottom: 8px; transition: all 0.3s cubic-bezier(0.4,0,0.2,1); animation: fadeInUp 0.35s ease both; }
+    .exercise-item.completed-exercise { opacity: 0.6; border-left: 3px solid var(--green); background: rgba(76,175,80,0.05); }
     .exercise-name { font-size: 14px; font-weight: 600; margin-bottom: 6px; display: flex; justify-content: space-between; align-items: center; }
     .exercise-meta { font-size: 12px; color: var(--text2); display: flex; gap: 12px; flex-wrap: wrap; }
     .exercise-meta span { white-space: nowrap; }
     .set-row { display: flex; align-items: center; gap: 8px; margin-bottom: 6px; }
     .set-num { font-size: 12px; color: var(--text2); min-width: 20px; text-align: center; }
     .set-input { width: 70px; padding: 6px 8px; font-size: 13px; text-align: center; }
-    .set-check { width: 28px; height: 28px; background: var(--surface3); border: 2px solid var(--border); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.2s; flex-shrink: 0; }
-    .set-check.checked { background: var(--green); border-color: var(--green); }
+    .set-check { width: 28px; height: 28px; background: var(--surface3); border: 2px solid var(--border); border-radius: 50%; cursor: pointer; display: flex; align-items: center; justify-content: center; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); flex-shrink: 0; }
+    .set-check:active { transform: scale(0.85); }
+    .set-check.checked { background: var(--green); border-color: var(--green); animation: checkPop 0.35s cubic-bezier(0.4,0,0.2,1); box-shadow: 0 0 12px rgba(76,175,80,0.4); }
     .set-check.checked::after { content: '\2713'; color: white; font-size: 14px; font-weight: 700; }
     .stat-grid { display: grid; grid-template-columns: repeat(2, 1fr); gap: 8px; }
-    .stat-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; text-align: center; }
-    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); }
+    .stat-box { background: var(--surface2); border-radius: var(--radius-sm); padding: 12px; text-align: center; animation: fadeInScale 0.4s ease both; transition: transform 0.2s; }
+    .stat-box:nth-child(1) { animation-delay: 0.05s; } .stat-box:nth-child(2) { animation-delay: 0.1s; } .stat-box:nth-child(3) { animation-delay: 0.15s; } .stat-box:nth-child(4) { animation-delay: 0.2s; }
+    .stat-box:hover { transform: scale(1.03); }
+    .stat-value { font-size: 24px; font-weight: 700; color: var(--accent); animation: countUp 0.5s ease both; }
     .stat-label { font-size: 11px; color: var(--text2); margin-top: 2px; }
     .progress-bar { height: 6px; background: var(--surface3); border-radius: 3px; overflow: hidden; margin-top: 6px; }
-    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.5s ease; }
-    .tabs { display: flex; gap: 4px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; }
-    .tab { padding: 8px 16px; border-radius: 20px; font-size: 13px; font-weight: 500; background: var(--surface2); border: none; color: var(--text2); cursor: pointer; white-space: nowrap; transition: all 0.2s; }
-    .tab.active { background: var(--accent); color: white; }
+    .progress-fill { height: 100%; border-radius: 3px; transition: width 0.8s cubic-bezier(0.4,0,0.2,1); background-image: linear-gradient(90deg, transparent, rgba(255,255,255,0.15), transparent); background-size: 200% 100%; }
+    .progress-fill.animated { animation: shimmer 2s ease-in-out infinite; }
+    .tabs { display: flex; gap: 0; margin-bottom: 16px; background: var(--surface2); border-radius: var(--radius); padding: 3px; position: relative; }
+    .tab { flex: 1; padding: 8px 4px; border-radius: calc(var(--radius) - 2px); font-size: 11px; font-weight: 600; background: transparent; border: none; color: var(--text2); cursor: pointer; white-space: nowrap; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); display: flex; flex-direction: column; align-items: center; gap: 3px; z-index: 1; }
+    .tab:active { transform: scale(0.93); }
+    .tab.active { color: white; background: var(--accent); box-shadow: 0 2px 8px rgba(108,99,255,0.35); }
+    .tab svg { width: 16px; height: 16px; }
+    /* Scrollable tabs variant for when there are only 2 items */
+    .tabs-pill { display: flex; gap: 4px; margin-bottom: 16px; overflow-x: auto; -webkit-overflow-scrolling: touch; scrollbar-width: none; -ms-overflow-style: none; }
+    .tabs-pill::-webkit-scrollbar { display: none; }
+    .tabs-pill .tab { flex: 0 0 auto; padding: 8px 20px; border-radius: 20px; flex-direction: row; font-size: 13px; }
     .modal-overlay { position: fixed; inset: 0; background: rgba(0,0,0,0.7); z-index: 200; display: flex; align-items: flex-end; justify-content: center; animation: fadeIn 0.2s; }
     .modal { background: var(--surface); border-radius: var(--radius) var(--radius) 0 0; width: 100%; max-width: 480px; max-height: 85vh; overflow-y: auto; padding: 20px; animation: slideUp 0.3s; }
     .modal-title { font-size: 18px; font-weight: 700; margin-bottom: 16px; display: flex; justify-content: space-between; align-items: center; }
     @keyframes fadeIn { from { opacity: 0; } to { opacity: 1; } }
-    @keyframes slideUp { from { transform: translateY(100%); } to { transform: translateY(0); } }
+    @keyframes slideUp { from { transform: translateY(100%); opacity: 0; } to { transform: translateY(0); opacity: 1; } }
+    @keyframes fadeInUp { from { opacity: 0; transform: translateY(12px); } to { opacity: 1; transform: translateY(0); } }
+    @keyframes fadeInScale { from { opacity: 0; transform: scale(0.95); } to { opacity: 1; transform: scale(1); } }
+    @keyframes slideInRight { from { opacity: 0; transform: translateX(16px); } to { opacity: 1; transform: translateX(0); } }
+    @keyframes shimmer { 0% { background-position: -200% 0; } 100% { background-position: 200% 0; } }
+    @keyframes countUp { from { opacity: 0; transform: translateY(8px) scale(0.8); } to { opacity: 1; transform: translateY(0) scale(1); } }
+    @keyframes checkPop { 0% { transform: scale(1); } 40% { transform: scale(1.3); } 100% { transform: scale(1); } }
+    @keyframes ringDraw { from { stroke-dashoffset: 314; } }
+    @keyframes bannerSlide { from { opacity: 0; transform: translateY(-8px); } to { opacity: 1; transform: translateY(0); } }
     .mini-chart { display: flex; align-items: flex-end; gap: 4px; height: 80px; }
     .chart-bar { flex: 1; background: var(--accent); border-radius: 3px 3px 0 0; min-height: 4px; transition: height 0.3s; }
     .protein-ring { width: 120px; height: 120px; margin: 0 auto 12px; position: relative; }
     .protein-ring svg { transform: rotate(-90deg); }
+    .protein-ring svg circle:last-child { animation: ringDraw 1s cubic-bezier(0.4,0,0.2,1) both; }
     .protein-ring-text { position: absolute; inset: 0; display: flex; flex-direction: column; align-items: center; justify-content: center; }
     .protein-ring-value { font-size: 28px; font-weight: 700; }
     .protein-ring-label { font-size: 11px; color: var(--text2); }
     .toggle-wrap { display: flex; align-items: center; justify-content: space-between; padding: 8px 0; }
-    .toggle { width: 44px; height: 24px; background: var(--surface3); border-radius: 12px; cursor: pointer; position: relative; transition: background 0.2s; }
-    .toggle.on { background: var(--accent); }
-    .toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: transform 0.2s; }
+    .toggle { width: 44px; height: 24px; background: var(--surface3); border-radius: 12px; cursor: pointer; position: relative; transition: background 0.3s cubic-bezier(0.4,0,0.2,1); }
+    .toggle.on { background: var(--accent); box-shadow: 0 0 10px rgba(108,99,255,0.3); }
+    .toggle::after { content: ''; position: absolute; width: 20px; height: 20px; border-radius: 50%; background: white; top: 2px; left: 2px; transition: transform 0.3s cubic-bezier(0.68,-0.3,0.32,1.3); }
     .toggle.on::after { transform: translateX(20px); }
-    .timer { font-size: 48px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; padding: 20px; color: var(--accent); }
+    .timer { font-size: 48px; font-weight: 700; text-align: center; font-variant-numeric: tabular-nums; padding: 20px; color: var(--accent); transition: color 0.3s; }
+    .timer.warning { color: var(--orange); animation: pulse 0.8s infinite; }
+    .timer.done { color: var(--green); }
     .timer-controls { display: flex; gap: 8px; justify-content: center; }
     .empty-state { text-align: center; padding: 40px 20px; color: var(--text2); }
     .empty-state-icon { font-size: 48px; margin-bottom: 12px; }
@@ -114,11 +141,12 @@
     .text-center { text-align: center; } .text-sm { font-size: 12px; } .text-muted { color: var(--text2); }
     .flex-between { display: flex; justify-content: space-between; align-items: center; }
     .hidden { display: none !important; }
-    .meal-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px; }
+    .meal-item { display: flex; justify-content: space-between; align-items: center; padding: 10px 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 6px; animation: slideInRight 0.3s ease both; transition: all 0.2s; }
+    .meal-item:hover { background: var(--surface3); }
     .meal-item-name { font-size: 14px; font-weight: 500; }
     .meal-item-protein { font-size: 14px; font-weight: 700; color: var(--green); }
-    .history-item { padding: 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; transition: all 0.2s; }
-    .history-item:hover { background: var(--surface3); }
+    .history-item { padding: 12px; background: var(--surface2); border-radius: var(--radius-sm); margin-bottom: 8px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); animation: fadeInUp 0.3s ease both; }
+    .history-item:hover { background: var(--surface3); transform: translateX(4px); }
     .history-date { font-size: 12px; color: var(--text2); }
     .history-title { font-size: 14px; font-weight: 600; margin-top: 2px; }
     .history-stats { font-size: 12px; color: var(--text2); margin-top: 4px; }
@@ -143,8 +171,9 @@
     /* Calendar */
     .cal-grid { display: grid; grid-template-columns: repeat(7, 1fr); gap: 4px; }
     .cal-header { font-size: 11px; color: var(--text2); text-align: center; padding: 4px; }
-    .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; transition: all 0.2s; background: var(--surface2); gap: 2px; }
-    .cal-day:hover { background: var(--surface3); }
+    .cal-day { aspect-ratio: 1; display: flex; flex-direction: column; align-items: center; justify-content: center; border-radius: var(--radius-sm); font-size: 13px; cursor: pointer; transition: all 0.25s cubic-bezier(0.4,0,0.2,1); background: var(--surface2); gap: 2px; }
+    .cal-day:hover { background: var(--surface3); transform: scale(1.1); }
+    .cal-day:active { transform: scale(0.9); }
     .cal-day.empty { background: transparent; cursor: default; }
     .cal-day.today { border: 2px solid var(--accent); }
     .cal-day.has-workout { background: rgba(108,99,255,0.15); }
@@ -159,6 +188,10 @@
     .plate { display: inline-flex; align-items: center; justify-content: center; border-radius: 4px; font-size: 12px; font-weight: 700; color: white; margin: 2px; padding: 4px 8px; }
     /* Overload tip */
     .tip-banner { background: rgba(255,152,0,0.15); border: 1px solid rgba(255,152,0,0.3); border-radius: var(--radius-sm); padding: 8px 12px; font-size: 12px; color: var(--orange); margin-bottom: 8px; }
+    /* Check-in banner */
+    .checkin-banner { background: rgba(108,99,255,0.15); border: 1px solid rgba(108,99,255,0.3); border-radius: var(--radius); padding: 12px 16px; margin-bottom: 12px; display: flex; align-items: center; justify-content: space-between; gap: 12px; animation: bannerSlide 0.4s ease both; }
+    .checkin-banner-text { font-size: 14px; font-weight: 500; }
+    .checkin-banner-actions { display: flex; align-items: center; gap: 8px; flex-shrink: 0; }
     /* Measurements */
     .measure-row { display: flex; justify-content: space-between; align-items: center; padding: 8px 0; border-bottom: 1px solid var(--border); }
     .measure-label { font-size: 13px; }
@@ -281,12 +314,13 @@ const DEFAULT_WORKOUTS={
 const DEFAULT_PROFILE={height:161,weight:55,proteinMin:88,proteinMax:110,unit:'metric'};
 
 function loadData(){try{const r=localStorage.getItem(STORAGE_KEY);if(r)return JSON.parse(r);}catch(e){}
-return{profile:{...DEFAULT_PROFILE},categories:{...DEFAULT_CATEGORIES},schedule:{...DEFAULT_SCHEDULE},workouts:JSON.parse(JSON.stringify(DEFAULT_WORKOUTS)),customWorkouts:{},logs:{},nutrition:{},bodyweight:{},measurements:{},prs:{},settings:{restTimerEnabled:true,restTimerSound:true,darkMode:true,showStretchSection:true}};}
+return{profile:{...DEFAULT_PROFILE},categories:{...DEFAULT_CATEGORIES},schedule:{...DEFAULT_SCHEDULE},workouts:JSON.parse(JSON.stringify(DEFAULT_WORKOUTS)),customWorkouts:{},logs:{},nutrition:{},bodyweight:{},measurements:{},prs:{},settings:{restTimerEnabled:true,restTimerSound:true,darkMode:true,showStretchSection:true,autoTrackRestDays:true}};}
 
 let data=loadData();
 // Ensure new fields exist for older data
 if(!data.measurements) data.measurements={};
 if(!data.prs) data.prs={};
+if(data.settings.autoTrackRestDays===undefined) data.settings.autoTrackRestDays=true;
 
 function saveData(){localStorage.setItem(STORAGE_KEY,JSON.stringify(data));}
 
@@ -410,6 +444,7 @@ let elapsedInterval=null;
 function navigate(page){currentPage=page;document.querySelectorAll('.nav-btn').forEach(b=>b.classList.toggle('active',b.dataset.page===page));render();}
 function render(){
   const c=document.getElementById('main-content'),sub=document.getElementById('header-sub'),title=document.getElementById('header-title');
+  c.classList.remove('page-enter');void c.offsetWidth;c.classList.add('page-enter');
   clearInterval(elapsedInterval);
   switch(currentPage){
     case'today':renderToday(c,title,sub);break;
@@ -426,6 +461,13 @@ function renderToday(container,title,sub){
   title.textContent="Today's Training";sub.textContent=formatDate(currentDate);
   const dow=dayOfWeek(currentDate),scheduled=data.schedule[dow],log=data.logs[currentDate]||null;
   let html='';
+  // Check-in banner
+  const isToday=currentDate===todayStr();
+  if(isToday&&scheduled&&scheduled.category!=='rest'&&!log&&!sessionStorage.getItem('checkin_dismissed')){
+    const tpl=data.workouts[scheduled.category]||data.customWorkouts[scheduled.category];
+    const startAction=tpl?`startWorkout('${escAttr(currentDate)}','${escAttr(scheduled.category)}')`:`startSimpleLog('${escAttr(currentDate)}','${escAttr(scheduled.label)}')`;
+    html+=`<div class="checkin-banner"><div class="checkin-banner-text">Ready for today's ${esc(scheduled.label)}?</div><div class="checkin-banner-actions"><button class="btn btn-sm" onclick="${startAction}">Start</button><button class="btn-icon" onclick="sessionStorage.setItem('checkin_dismissed','1');render()" style="font-size:16px">&times;</button></div></div>`;
+  }
   // Week strip
   const week=getWeekDates();
   html+='<div class="schedule-grid">';
@@ -472,7 +514,7 @@ function renderWorkoutLog(log,dateStr,template){
   }
 
   html+=`<div class="flex-between mb-12"><span class="text-sm text-muted">${compEx}/${totalEx} exercises</span><span class="text-sm" style="color:var(--accent)">${pct}%</span></div>`;
-  html+=`<div class="progress-bar mb-16"><div class="progress-fill" style="width:${pct}%;background:var(--accent)"></div></div>`;
+  html+=`<div class="progress-bar mb-16"><div class="progress-fill${pct>0&&pct<100?' animated':''}" style="width:${pct}%;background:var(--accent)"></div></div>`;
 
   template.sections.forEach(section=>{
     if(!data.settings.showStretchSection&&section.name.toLowerCase().includes('stretch'))return;
@@ -571,7 +613,7 @@ let restTimerInterval=null,restTimerRemaining=0;
 function renderRestTimer(){const m=Math.floor(restTimerRemaining/60),s=restTimerRemaining%60;
 return`<div class="card"><div class="card-title">Rest Timer</div><div class="timer" id="timer-display">${m}:${s.toString().padStart(2,'0')}</div><div class="timer-controls"><button class="btn btn-sm btn-outline" onclick="startRestTimer(30)">30s</button><button class="btn btn-sm btn-outline" onclick="startRestTimer(45)">45s</button><button class="btn btn-sm btn-outline" onclick="startRestTimer(60)">60s</button><button class="btn btn-sm btn-outline" onclick="startRestTimer(90)">90s</button><button class="btn btn-sm btn-outline" onclick="startRestTimer(120)">2m</button><button class="btn btn-sm ${restTimerInterval?'btn-danger':'btn-outline'}" onclick="stopRestTimer()">${restTimerInterval?'Stop':'Reset'}</button></div></div>`;}
 
-function startRestTimer(sec){stopRestTimer();restTimerRemaining=sec;restTimerInterval=setInterval(()=>{restTimerRemaining--;const el=document.getElementById('timer-display');if(el){const m=Math.floor(restTimerRemaining/60),s=restTimerRemaining%60;el.textContent=`${m}:${s.toString().padStart(2,'0')}`;}if(restTimerRemaining<=0){stopRestTimer();haptic([200,100,200]);if(data.settings.restTimerSound)try{const c=new(window.AudioContext||window.webkitAudioContext)();[440,554,659].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.15;o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.12);});}catch(e){}}},1000);}
+function startRestTimer(sec){stopRestTimer();restTimerRemaining=sec;restTimerInterval=setInterval(()=>{restTimerRemaining--;const el=document.getElementById('timer-display');if(el){const m=Math.floor(restTimerRemaining/60),s=restTimerRemaining%60;el.textContent=`${m}:${s.toString().padStart(2,'0')}`;el.classList.toggle('warning',restTimerRemaining>0&&restTimerRemaining<=5);el.classList.toggle('done',restTimerRemaining<=0);}if(restTimerRemaining<=0){stopRestTimer();haptic([200,100,200]);if(data.settings.restTimerSound)try{const c=new(window.AudioContext||window.webkitAudioContext)();[440,554,659].forEach((f,i)=>{const o=c.createOscillator(),g=c.createGain();o.connect(g);g.connect(c.destination);o.frequency.value=f;g.gain.value=0.15;o.start(c.currentTime+i*0.15);o.stop(c.currentTime+i*0.15+0.12);});}catch(e){}}},1000);}
 
 function stopRestTimer(){if(restTimerInterval){clearInterval(restTimerInterval);restTimerInterval=null;}restTimerRemaining=0;const el=document.getElementById('timer-display');if(el)el.textContent='0:00';}
 
@@ -581,7 +623,7 @@ function renderHistory(container,title,sub){
   const logDates=Object.keys(data.logs).sort().reverse();
   let html=`<div class="stat-grid mb-16"><div class="stat-box"><div class="stat-value">${logDates.length}</div><div class="stat-label">Total Sessions</div></div><div class="stat-box"><div class="stat-value">${getStreak()}</div><div class="stat-label">Current Streak</div></div></div>`;
 
-  html+=`<div class="tabs"><button class="tab ${historyTab==='calendar'?'active':''}" onclick="historyTab='calendar';render()">Calendar</button><button class="tab ${historyTab==='list'?'active':''}" onclick="historyTab='list';render()">List</button></div>`;
+  html+=`<div class="tabs-pill"><button class="tab ${historyTab==='calendar'?'active':''}" onclick="historyTab='calendar';render()">Calendar</button><button class="tab ${historyTab==='list'?'active':''}" onclick="historyTab='list';render()">List</button></div>`;
 
   if(historyTab==='calendar'){
     // Calendar view
@@ -687,7 +729,7 @@ function renderProgress(container,title,sub){
   html+=`<div class="stat-grid mb-16"><div class="stat-box"><div class="stat-value">${tc}</div><div class="stat-label">All-Time Sessions</div></div><div class="stat-box"><div class="stat-value">${getStreak()}</div><div class="stat-label">Current Streak</div></div></div>`;
 
   // Tabs
-  html+=`<div class="tabs"><button class="tab ${progressTab==='upper'?'active':''}" onclick="progressTab='upper';render()">Upper</button><button class="tab ${progressTab==='lower'?'active':''}" onclick="progressTab='lower';render()">Lower</button><button class="tab ${progressTab==='endurance'?'active':''}" onclick="progressTab='endurance';render()">Endurance</button><button class="tab ${progressTab==='bodyweight'?'active':''}" onclick="progressTab='bodyweight';render()">Bodyweight</button><button class="tab ${progressTab==='measurements'?'active':''}" onclick="progressTab='measurements';render()">Measurements</button></div>`;
+  html+=`<div class="tabs"><button class="tab ${progressTab==='upper'?'active':''}" onclick="progressTab='upper';render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M12 2C6.48 2 2 6.48 2 12s4.48 10 10 10 10-4.48 10-10S17.52 2 12 2z"/><path d="M8 14s1.5 2 4 2 4-2 4-2"/><line x1="9" y1="9" x2="9.01" y2="9"/><line x1="15" y1="9" x2="15.01" y2="9"/></svg>Upper</button><button class="tab ${progressTab==='lower'?'active':''}" onclick="progressTab='lower';render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M6 18l3-12h6l3 12"/><line x1="8" y1="22" x2="8" y2="18"/><line x1="16" y1="22" x2="16" y2="18"/></svg>Lower</button><button class="tab ${progressTab==='endurance'?'active':''}" onclick="progressTab='endurance';render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M20.84 4.61a5.5 5.5 0 0 0-7.78 0L12 5.67l-1.06-1.06a5.5 5.5 0 0 0-7.78 7.78L12 21.23l8.84-8.84a5.5 5.5 0 0 0 0-7.78z"/></svg>Cardio</button><button class="tab ${progressTab==='bodyweight'?'active':''}" onclick="progressTab='bodyweight';render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><polyline points="22 12 18 12 15 21 9 3 6 12 2 12"/></svg>Weight</button><button class="tab ${progressTab==='measurements'?'active':''}" onclick="progressTab='measurements';render()"><svg viewBox="0 0 24 24" fill="none" stroke="currentColor" stroke-width="2"><path d="M2 12h4l1-3h2l2 6h2l1-3h4"/><rect x="18" y="8" width="4" height="8" rx="1"/></svg>Body</button></div>`;
 
   if(progressTab==='bodyweight'){
     const bwDates=Object.keys(data.bodyweight).sort().slice(-20);
@@ -752,6 +794,7 @@ function renderSettings(container,title,sub){
     <div class="toggle-wrap"><span>Auto rest timer</span><div class="toggle ${data.settings.restTimerEnabled?'on':''}" onclick="data.settings.restTimerEnabled=!data.settings.restTimerEnabled;saveData();render()"></div></div>
     <div class="toggle-wrap"><span>Timer sound</span><div class="toggle ${data.settings.restTimerSound?'on':''}" onclick="data.settings.restTimerSound=!data.settings.restTimerSound;saveData();render()"></div></div>
     <div class="toggle-wrap"><span>Show stretch sections</span><div class="toggle ${data.settings.showStretchSection?'on':''}" onclick="data.settings.showStretchSection=!data.settings.showStretchSection;saveData();render()"></div></div>
+    <div class="toggle-wrap"><span>Auto-track rest days</span><div class="toggle ${data.settings.autoTrackRestDays?'on':''}" onclick="data.settings.autoTrackRestDays=!data.settings.autoTrackRestDays;saveData();if(data.settings.autoTrackRestDays)autoCompleteRestDays();render()"></div></div>
   </div>`;
 
   // Cloud sync
@@ -815,8 +858,37 @@ function updateSyncIndicator(){const el=document.getElementById('sync-indicator'
 function showSyncSetup(){showModal('Cloud Sync',`<p class="text-sm text-muted mb-12">Enter a sync code to share data across devices. Use the same code on all your devices.</p><div class="form-group"><label>Sync Code</label><input id="sync-code-input" placeholder="e.g., mytraining123" value="${escAttr(syncCode)}"></div><div class="text-sm text-muted mb-16">Choose something memorable - anyone with this code can access your data.</div><div style="display:flex;gap:8px"><button class="btn btn-full" onclick="startSync()">Connect</button>${syncEnabled?'<button class="btn btn-danger" onclick="disableSync();closeModal()">Disconnect</button>':''}</div>`);}
 function startSync(){const c=document.getElementById('sync-code-input').value.trim();if(!c||c.length<4){document.getElementById('sync-code-input').style.borderColor='var(--red)';return;}enableSync(c);closeModal();render();}
 
+// ==================== AUTO DAY TRACKING ====================
+function autoCompleteRestDays(){
+  if(!data.settings.autoTrackRestDays)return;
+  const today=new Date();let changed=false;
+  for(let i=1;i<=30;i++){
+    const d=new Date(today);d.setDate(today.getDate()-i);
+    const ds=d.toISOString().split('T')[0],sch=data.schedule[d.getDay()];
+    if(sch&&sch.category==='rest'&&!data.logs[ds]){
+      data.logs[ds]={workout:'rest',label:'Rest Day',exercises:{},notes:'',duration:0,completed:true,auto:true};
+      changed=true;
+    }
+  }
+  if(changed)saveData();
+}
+
+let _lastKnownDate=todayStr();
+function checkMidnightRollover(){
+  const now=todayStr();
+  if(now!==_lastKnownDate){
+    _lastKnownDate=now;
+    currentDate=now;
+    sessionStorage.removeItem('checkin_dismissed');
+    autoCompleteRestDays();
+    render();
+  }
+}
+setInterval(checkMidnightRollover,30000);
+
 // ==================== INIT ====================
 if('serviceWorker' in navigator)navigator.serviceWorker.register('sw.js');
+autoCompleteRestDays();
 render();
 </script>
 </body>
