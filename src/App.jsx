@@ -1,6 +1,7 @@
 import { useEffect, useMemo, useState } from 'react';
 import { AppShell } from './kit/AppShell.jsx';
 import { Icons } from './kit/Icons.jsx';
+import { useStore } from './store/StoreProvider.jsx';
 import { TodayScreen } from './screens/TodayScreen.jsx';
 import { HistoryScreen } from './screens/HistoryScreen.jsx';
 import { NutritionScreen } from './screens/NutritionScreen.jsx';
@@ -31,6 +32,7 @@ export function App() {
   useEffect(() => { localStorage.setItem(TAB_KEY, tab); }, [tab]);
   useEffect(() => { localStorage.setItem(THEME_KEY, theme); }, [theme]);
 
+  const { syncStatus } = useStore();
   const now = useMemo(() => new Date(), []);
   const subtitle = formatSubtitle(tab, now);
 
@@ -41,7 +43,7 @@ export function App() {
       theme={theme}
       subtitle={subtitle}
       leadingIcon={Icons.dumbbell}
-      syncStatus="offline"
+      syncStatus={syncStatus}
     >
       {tab === 'today' && <TodayScreen />}
       {tab === 'history' && <HistoryScreen />}
