@@ -1,0 +1,141 @@
+import { useEffect } from 'react';
+import { Icons } from './Icons.jsx';
+
+const TAB_META = {
+  today: { title: "Today's Training", icon: Icons.clock, label: 'Today' },
+  history: { title: 'History', icon: Icons.calendar, label: 'History' },
+  nutrition: { title: 'Nutrition', icon: Icons.coffee, label: 'Food' },
+  progress: { title: 'Progress', icon: Icons.activity, label: 'Progress' },
+  settings: { title: 'Settings', icon: Icons.settings, label: 'Settings' }
+};
+
+export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline', leadingIcon, children }) {
+  useEffect(() => {
+    document.body.setAttribute('data-app-theme', theme);
+    document.documentElement.setAttribute('data-theme', theme);
+  }, [theme]);
+
+  const meta = TAB_META[tab];
+  const syncClass =
+    syncStatus === 'connected' ? '' : syncStatus === 'syncing' ? 'syncing' : 'off';
+  const syncLabel =
+    syncStatus === 'connected' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing…' : 'Offline';
+
+  return (
+    <div className="tt-app" data-theme={theme}>
+      <div className="tt-header">
+        {leadingIcon && <div className="tt-mark">{leadingIcon}</div>}
+        <div style={{ flex: 1 }}>
+          <div className="tt-title">{meta.title}</div>
+          {subtitle && <div className="tt-sub">{subtitle}</div>}
+        </div>
+        <div className={`tt-sync ${syncClass}`}>
+          <span className="dot" />
+          {syncLabel}
+        </div>
+      </div>
+
+      {children}
+
+      <nav className="tt-nav" role="tablist">
+        {Object.entries(TAB_META).map(([k, m]) => (
+          <button
+            key={k}
+            role="tab"
+            aria-selected={tab === k}
+            className={`tt-nb ${tab === k ? 'on' : ''}`}
+            onClick={() => setTab(k)}
+          >
+            {m.icon}
+            <span>{m.label}</span>
+          </button>
+        ))}
+      </nav>
+    </div>
+  );
+}
+
+export function Page({ children, className = '' }) {
+  return <div className={`tt-page tt-page-enter ${className}`}>{children}</div>;
+}
+
+export function Card({ children, className = '', title, trailing }) {
+  return (
+    <div className={`tt-card ${className}`}>
+      {(title || trailing) && (
+        <div className="tt-card-title" style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+          <span style={{ flex: 1 }}>{title}</span>
+          {trailing}
+        </div>
+      )}
+      {children}
+    </div>
+  );
+}
+
+export function OpaqueCard({ children, className = '' }) {
+  return <div className={`tt-card-opaque ${className}`}>{children}</div>;
+}
+
+export function Modal({ open, onClose, title, children }) {
+  useEffect(() => {
+    if (!open) return;
+    const esc = (e) => e.key === 'Escape' && onClose && onClose();
+    window.addEventListener('keydown', esc);
+    return () => window.removeEventListener('keydown', esc);
+  }, [open, onClose]);
+  if (!open) return null;
+  return (
+    <div className="tt-modal-scrim" onClick={onClose}>
+      <div className="tt-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
+        <div className="tt-modal-handle" />
+        {title && (
+          <div className="tt-modal-hd">
+            <h3>{title}</h3>
+            <button className="tt-btn tt-btn-ghost tt-btn-sm" onClick={onClose} aria-label="Close">
+              {Icons.close}
+            </button>
+          </div>
+        )}
+        {children}
+      </div>
+    </div>
+  );
+}
+
+export function Segmented({ value, options, onChange, ariaLabel }) {
+  return (
+    <div className="tt-seg" role="tablist" aria-label={ariaLabel}>
+      {options.map((o) => (
+        <button
+          key={o.value}
+          className={value === o.value ? 'on' : ''}
+          onClick={() => onChange(o.value)}
+          role="tab"
+          aria-selected={value === o.value}
+        >
+          {o.label}
+        </button>
+      ))}
+    </div>
+  );
+}
+
+export function Tag({ kind = 'sport', children, icon }) {
+  return (
+    <span className={`tt-tag tt-tag-${kind}`}>
+      {icon && <span className="tt-tag-ico">{icon}</span>}
+      {children}
+    </span>
+  );
+}
+
+export function Banner({ kind = 'check', children, onDismiss, icon }) {
+  return (
+    <div className={`tt-banner tt-banner-${kind}`}>
+      {icon && <span style={{ width: 16, height: 16, display: 'inline-flex' }}>{icon}</span>}
+      <div className="sp">{children}</div>
+      {onDismiss && <button className="x" onClick={onDismiss} aria-label="Dismiss">×</button>}
+    </div>
+  );
+}
