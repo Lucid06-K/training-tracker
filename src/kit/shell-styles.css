@@ -1,0 +1,5 @@
+/* Shell styles — ported from prototype ShellStyles.jsx in next commit. */
+body { background: var(--bg); color: var(--fg-1); }
+.tt-bootstrap { padding: 40px 20px; text-align: center; }
+.tt-bootstrap h1 { font-size: 28px; font-weight: 800; letter-spacing: -0.024em; margin-bottom: 8px; }
+.tt-bootstrap p { color: var(--fg-2); font-size: 14px; }

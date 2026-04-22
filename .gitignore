@@ -1,2 +1,11 @@
 # Local Netlify folder
 .netlify
+
+# Vite / Node
+node_modules
+dist
+.DS_Store
+*.log
+.env
+.env.local
+.vite
