@@ -1,12 +1,27 @@
-import { useEffect, useMemo, useState } from 'react';
-import { AppShell } from './kit/AppShell.jsx';
+import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { AppShell, Page, Card } from './kit/AppShell.jsx';
 import { Icons } from './kit/Icons.jsx';
 import { useStore } from './store/StoreProvider.jsx';
 import { TodayScreen } from './screens/TodayScreen.jsx';
 import { HistoryScreen } from './screens/HistoryScreen.jsx';
 import { NutritionScreen } from './screens/NutritionScreen.jsx';
-import { ProgressScreen } from './screens/ProgressScreen.jsx';
 import { SettingsScreen } from './screens/SettingsScreen.jsx';
+
+const ProgressScreen = lazy(() =>
+  import('./screens/ProgressScreen.jsx').then((m) => ({ default: m.ProgressScreen }))
+);
+
+function ProgressFallback() {
+  return (
+    <Page>
+      <Card>
+        <div style={{ textAlign: 'center', padding: 30, color: 'var(--fg-3)' }}>
+          Loading charts…
+        </div>
+      </Card>
+    </Page>
+  );
+}
 
 const THEME_KEY = 'tt-theme';
 const TAB_KEY = 'tt-tab';
@@ -49,7 +64,11 @@ export function App() {
       {tab === 'today' && <TodayScreen />}
       {tab === 'history' && <HistoryScreen />}
       {tab === 'nutrition' && <NutritionScreen />}
-      {tab === 'progress' && <ProgressScreen />}
+      {tab === 'progress' && (
+        <Suspense fallback={<ProgressFallback />}>
+          <ProgressScreen />
+        </Suspense>
+      )}
       {tab === 'settings' && <SettingsScreen theme={theme} onTheme={setTheme} />}
     </AppShell>
   );
