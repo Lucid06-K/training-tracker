@@ -1,5 +1,5 @@
-import { useRef, useState } from 'react';
-import { Page, Card, Segmented, Modal } from '../kit/AppShell.jsx';
+import { useRef } from 'react';
+import { Page, Card, Segmented } from '../kit/AppShell.jsx';
 import { Icons } from '../kit/Icons.jsx';
 import { useStore } from '../store/StoreProvider.jsx';
 import { DAYS, parseNumber, todayStr } from '../store/utils.js';
@@ -44,40 +44,53 @@ function Toggle({ checked, onChange, label, desc }) {
   );
 }
 
-function SyncModal({ open, onClose, currentCode, onEnable }) {
-  const [code, setCode] = useState(currentCode || '');
-  const [err, setErr] = useState('');
-  const submit = async () => {
-    const c = code.trim().toLowerCase();
-    if (!c || c.length < 4) { setErr('Code must be at least 4 characters'); return; }
-    setErr('');
-    const ok = await onEnable(c);
-    if (ok) onClose();
-    else setErr('Failed to connect — check network');
-  };
+function GoogleButton({ onClick, signingIn }) {
   return (
-    <Modal open={open} onClose={onClose} title="Cloud sync">
-      <p className="tt-muted" style={{ fontSize: 12 }}>
-        Enter a sync code to share data across devices. Use the same code on each device.
-      </p>
-      <div className="tt-label" style={{ marginTop: 10 }}>Sync code</div>
-      <input
-        className="tt-input"
-        value={code}
-        onChange={(e) => setCode(e.target.value)}
-        placeholder="e.g., mytraining123"
-        autoCapitalize="none"
-        autoCorrect="off"
-      />
-      {err && <div style={{ color: 'var(--danger)', fontSize: 12, marginTop: 6 }}>{err}</div>}
-      <button className="tt-btn tt-btn-primary tt-btn-block" style={{ marginTop: 14 }} onClick={submit}>Connect</button>
-    </Modal>
+    <button
+      type="button"
+      className="tt-btn"
+      onClick={onClick}
+      disabled={signingIn}
+      style={{
+        width: '100%',
+        display: 'inline-flex',
+        alignItems: 'center',
+        justifyContent: 'center',
+        gap: 10,
+        padding: '12px 14px',
+        borderRadius: 12,
+        background: '#fff',
+        color: '#1f1f1f',
+        border: '1px solid rgba(0,0,0,.1)',
+        fontWeight: 600,
+        fontSize: 14
+      }}
+    >
+      <svg width="18" height="18" viewBox="0 0 48 48" aria-hidden="true">
+        <path fill="#FFC107" d="M43.6 20.5H42V20H24v8h11.3C33.8 32.7 29.3 36 24 36c-6.6 0-12-5.4-12-12s5.4-12 12-12c3 0 5.8 1.1 7.9 3l5.7-5.7C33.9 5.9 29.2 4 24 4 12.9 4 4 12.9 4 24s8.9 20 20 20 20-8.9 20-20c0-1.3-.1-2.3-.4-3.5z"/>
+        <path fill="#FF3D00" d="M6.3 14.7l6.6 4.8C14.7 16 19 12 24 12c3 0 5.8 1.1 7.9 3l5.7-5.7C33.9 5.9 29.2 4 24 4 16.3 4 9.7 8.3 6.3 14.7z"/>
+        <path fill="#4CAF50" d="M24 44c5.1 0 9.8-1.9 13.3-5.2l-6.1-5c-2 1.3-4.4 2.2-7.2 2.2-5.3 0-9.7-3.3-11.3-8l-6.5 5C9.6 39.6 16.3 44 24 44z"/>
+        <path fill="#1976D2" d="M43.6 20.5H42V20H24v8h11.3c-.8 2.2-2.2 4.1-4.1 5.5l6.1 5C41.4 34.8 44 29.8 44 24c0-1.3-.1-2.3-.4-3.5z"/>
+      </svg>
+      {signingIn ? 'Signing in…' : 'Sign in with Google'}
+    </button>
   );
 }
 
 export function SettingsScreen({ theme, onTheme }) {
-  const { data, update, syncStatus, syncCode, syncEnabled, enableSync, disableSync, forceSync, resetAll, importData } = useStore();
-  const [syncOpen, setSyncOpen] = useState(false);
+  const {
+    data,
+    update,
+    syncStatus,
+    syncEnabled,
+    user,
+    signIn,
+    signOut,
+    signingIn,
+    forceSync,
+    resetAll,
+    importData
+  } = useStore();
   const fileInput = useRef(null);
 
   const setProfile = (field, val) => update((d) => { d.profile[field] = val === '' ? undefined : val; return d; });
@@ -227,26 +240,52 @@ export function SettingsScreen({ theme, onTheme }) {
         />
       </Card>
 
-      <Card title="Cloud sync">
-        <div className="tt-row" style={{ padding: '4px 0' }}>
-          <span>Status</span>
-          <span style={{ fontWeight: 600, color: syncStatus === 'connected' ? 'var(--success)' : syncStatus === 'syncing' ? 'var(--warning)' : 'var(--fg-3)' }}>
-            {syncEnabled ? (syncStatus === 'connected' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing…' : 'Offline') : 'Not synced'}
-          </span>
-        </div>
-        {syncEnabled ? (
+      <Card title="Account">
+        {user ? (
           <>
-            <div style={{ fontSize: 12, margin: '8px 0' }}>Code: <strong>{syncCode}</strong></div>
-            <p className="tt-muted" style={{ fontSize: 12, margin: '0 0 10px' }}>Use this same code on your other devices.</p>
-            <div className="tt-btn-row">
-              <button className="tt-btn tt-btn-ghost tt-btn-sm" onClick={forceSync}>Force Sync</button>
-              <button className="tt-btn tt-btn-danger tt-btn-sm" onClick={disableSync}>Disconnect</button>
+            <div style={{ display: 'flex', alignItems: 'center', gap: 12, paddingBottom: 10 }}>
+              {user.photoURL ? (
+                <img
+                  src={user.photoURL}
+                  alt=""
+                  width="40"
+                  height="40"
+                  referrerPolicy="no-referrer"
+                  style={{ borderRadius: 999, border: '1px solid var(--border)' }}
+                />
+              ) : (
+                <div style={{ width: 40, height: 40, borderRadius: 999, background: 'var(--accent-tint)', color: 'var(--accent)', display: 'flex', alignItems: 'center', justifyContent: 'center', fontWeight: 800 }}>
+                  {(user.name || user.email || '?').slice(0, 1).toUpperCase()}
+                </div>
+              )}
+              <div style={{ flex: 1, minWidth: 0 }}>
+                <div style={{ fontWeight: 700, fontSize: 14, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                  {user.name || 'Signed in'}
+                </div>
+                {user.email && (
+                  <div className="tt-muted" style={{ fontSize: 11, overflow: 'hidden', textOverflow: 'ellipsis' }}>
+                    {user.email}
+                  </div>
+                )}
+              </div>
+            </div>
+            <div className="tt-row" style={{ padding: '4px 0' }}>
+              <span>Sync</span>
+              <span style={{ fontWeight: 600, color: syncStatus === 'connected' ? 'var(--success)' : syncStatus === 'syncing' ? 'var(--warning)' : 'var(--fg-3)' }}>
+                {syncStatus === 'connected' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing…' : 'Offline'}
+              </span>
+            </div>
+            <div className="tt-btn-row" style={{ marginTop: 10 }}>
+              <button className="tt-btn tt-btn-ghost tt-btn-sm" onClick={forceSync}>Force sync</button>
+              <button className="tt-btn tt-btn-danger tt-btn-sm" onClick={signOut}>Sign out</button>
             </div>
           </>
         ) : (
           <>
-            <p className="tt-muted" style={{ fontSize: 12, margin: '0 0 10px' }}>Sync training data across your devices.</p>
-            <button className="tt-btn tt-btn-primary tt-btn-sm" onClick={() => setSyncOpen(true)}>Set up sync</button>
+            <p className="tt-muted" style={{ fontSize: 12, margin: '0 0 10px' }}>
+              Sign in with Google to sync your training data across devices. Your current local data will carry over.
+            </p>
+            <GoogleButton onClick={signIn} signingIn={signingIn} />
           </>
         )}
       </Card>
@@ -264,12 +303,6 @@ export function SettingsScreen({ theme, onTheme }) {
         <input ref={fileInput} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onImport} />
       </Card>
 
-      <SyncModal
-        open={syncOpen}
-        onClose={() => setSyncOpen(false)}
-        currentCode={syncCode}
-        onEnable={enableSync}
-      />
     </Page>
   );
 }

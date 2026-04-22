@@ -1,5 +1,13 @@
 import { initializeApp } from 'firebase/app';
-import { getAuth, signInAnonymously } from 'firebase/auth';
+import {
+  getAuth,
+  GoogleAuthProvider,
+  signInWithPopup,
+  signInWithRedirect,
+  signOut,
+  onAuthStateChanged,
+  getRedirectResult
+} from 'firebase/auth';
 import {
   getFirestore,
   doc,
@@ -22,7 +30,6 @@ const firebaseConfig = {
 
 let app, auth, db;
 let initialized = false;
-let anonReady = null;
 
 export function getFirebase() {
   if (!initialized) {
@@ -30,24 +37,53 @@ export function getFirebase() {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       db = getFirestore(app);
-      anonReady = signInAnonymously(auth).catch((e) => {
-        console.warn('Firebase anon auth failed', e);
-        return null;
+      getRedirectResult(auth).catch((e) => {
+        if (e && e.code && e.code !== 'auth/no-auth-event') {
+          console.warn('getRedirectResult', e);
+        }
       });
       initialized = true;
     } catch (e) {
       console.warn('Firebase init failed', e);
     }
   }
-  return { app, auth, db, anonReady };
+  return { app, auth, db };
 }
 
-export async function pullDoc(code) {
-  const { db, anonReady } = getFirebase();
-  if (!db || !code) return null;
+export function onAuthChanged(cb) {
+  const { auth } = getFirebase();
+  if (!auth) { cb(null); return () => {}; }
+  return onAuthStateChanged(auth, cb);
+}
+
+export async function signInWithGoogle() {
+  const { auth } = getFirebase();
+  if (!auth) throw new Error('Firebase not ready');
+  const provider = new GoogleAuthProvider();
+  provider.setCustomParameters({ prompt: 'select_account' });
   try {
-    if (anonReady) await anonReady;
-    const snap = await getDoc(doc(db, 'users', code));
+    const result = await signInWithPopup(auth, provider);
+    return result.user;
+  } catch (e) {
+    if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment') {
+      await signInWithRedirect(auth, provider);
+      return null;
+    }
+    throw e;
+  }
+}
+
+export async function signOutUser() {
+  const { auth } = getFirebase();
+  if (!auth) return;
+  await signOut(auth);
+}
+
+export async function pullDoc(id) {
+  const { db } = getFirebase();
+  if (!db || !id) return null;
+  try {
+    const snap = await getDoc(doc(db, 'users', id));
     if (!snap.exists()) return null;
     return snap.data();
   } catch (e) {
@@ -56,12 +92,11 @@ export async function pullDoc(code) {
   }
 }
 
-export async function pushDoc(code, payload) {
-  const { db, anonReady } = getFirebase();
-  if (!db || !code) return false;
+export async function pushDoc(id, payload) {
+  const { db } = getFirebase();
+  if (!db || !id) return false;
   try {
-    if (anonReady) await anonReady;
-    await setDoc(doc(db, 'users', code), {
+    await setDoc(doc(db, 'users', id), {
       jsonData: JSON.stringify(payload),
       lastModified: Date.now(),
       updatedAt: serverTimestamp()
@@ -73,21 +108,17 @@ export async function pushDoc(code, payload) {
   }
 }
 
-export function subscribe(code, cb) {
-  const { db, anonReady } = getFirebase();
-  if (!db || !code) return () => {};
-  let unsub = () => {};
-  Promise.resolve(anonReady).then(() => {
-    unsub = onSnapshot(
-      doc(db, 'users', code),
-      (snap) => {
-        if (!snap.exists()) return;
-        cb(snap.data());
-      },
-      (err) => {
-        console.warn('Firestore onSnapshot error', err);
-      }
-    );
-  });
-  return () => unsub();
+export function subscribe(id, cb) {
+  const { db } = getFirebase();
+  if (!db || !id) return () => {};
+  return onSnapshot(
+    doc(db, 'users', id),
+    (snap) => {
+      if (!snap.exists()) return;
+      cb(snap.data());
+    },
+    (err) => {
+      console.warn('Firestore onSnapshot error', err);
+    }
+  );
 }

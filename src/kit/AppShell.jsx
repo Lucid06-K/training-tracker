@@ -9,7 +9,7 @@ const TAB_META = {
   settings: { title: 'Settings', icon: Icons.settings, label: 'Settings' }
 };
 
-export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline', leadingIcon, children }) {
+export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline', signedIn = false, leadingIcon, children }) {
   useEffect(() => {
     document.body.setAttribute('data-app-theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
@@ -17,9 +17,14 @@ export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline',
 
   const meta = TAB_META[tab];
   const syncClass =
-    syncStatus === 'connected' ? '' : syncStatus === 'syncing' ? 'syncing' : 'off';
-  const syncLabel =
-    syncStatus === 'connected' ? 'Synced' : syncStatus === 'syncing' ? 'Syncing…' : 'Offline';
+    !signedIn ? 'off' : syncStatus === 'connected' ? '' : syncStatus === 'syncing' ? 'syncing' : 'off';
+  const syncLabel = !signedIn
+    ? 'Local'
+    : syncStatus === 'connected'
+      ? 'Synced'
+      : syncStatus === 'syncing'
+        ? 'Syncing…'
+        : 'Offline';
 
   return (
     <div className="tt-app" data-theme={theme}>

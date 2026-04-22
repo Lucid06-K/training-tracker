@@ -32,7 +32,7 @@ export function App() {
   useEffect(() => { localStorage.setItem(TAB_KEY, tab); }, [tab]);
   useEffect(() => { localStorage.setItem(THEME_KEY, theme); }, [theme]);
 
-  const { syncStatus } = useStore();
+  const { syncStatus, user } = useStore();
   const now = useMemo(() => new Date(), []);
   const subtitle = formatSubtitle(tab, now);
 
@@ -44,6 +44,7 @@ export function App() {
       subtitle={subtitle}
       leadingIcon={Icons.dumbbell}
       syncStatus={syncStatus}
+      signedIn={!!user}
     >
       {tab === 'today' && <TodayScreen />}
       {tab === 'history' && <HistoryScreen />}

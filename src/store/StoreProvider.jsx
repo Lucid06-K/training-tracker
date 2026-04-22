@@ -1,6 +1,13 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
 import { STORAGE_KEY, SYNC_CODE_KEY, buildDefaultData, mergeWithDefaults } from './defaults.js';
-import { pullDoc, pushDoc, subscribe } from './firebase.js';
+import {
+  onAuthChanged,
+  pullDoc,
+  pushDoc,
+  signInWithGoogle,
+  signOutUser,
+  subscribe
+} from './firebase.js';
 
 const StoreCtx = createContext(null);
 
@@ -22,26 +29,39 @@ function persistToStorage(d) {
   }
 }
 
+function pickUser(fbUser) {
+  if (!fbUser) return null;
+  return {
+    uid: fbUser.uid,
+    email: fbUser.email || '',
+    name: fbUser.displayName || '',
+    photoURL: fbUser.photoURL || ''
+  };
+}
+
 export function StoreProvider({ children }) {
   const [data, setData] = useState(loadFromStorage);
-  const [syncCode, setSyncCode] = useState(() => localStorage.getItem(SYNC_CODE_KEY) || '');
-  const [syncStatus, setSyncStatus] = useState(syncCode ? 'syncing' : 'offline');
+  const [user, setUser] = useState(null);
+  const [authReady, setAuthReady] = useState(false);
+  const [syncStatus, setSyncStatus] = useState('offline');
+  const [signingIn, setSigningIn] = useState(false);
+
   const dataRef = useRef(data);
-  const syncCodeRef = useRef(syncCode);
+  const userRef = useRef(user);
   const pushTimer = useRef(null);
   const unsubRef = useRef(null);
 
   useEffect(() => { dataRef.current = data; }, [data]);
-  useEffect(() => { syncCodeRef.current = syncCode; }, [syncCode]);
+  useEffect(() => { userRef.current = user; }, [user]);
 
   const persist = useCallback((next) => {
     persistToStorage(next);
-    if (syncCodeRef.current) {
+    if (userRef.current) {
       clearTimeout(pushTimer.current);
       pushTimer.current = setTimeout(async () => {
         setSyncStatus('syncing');
         const payload = { ...dataRef.current, _lastModified: Date.now() };
-        const ok = await pushDoc(syncCodeRef.current, payload);
+        const ok = await pushDoc(userRef.current.uid, payload);
         setSyncStatus(ok ? 'connected' : 'offline');
       }, 1200);
     }
@@ -70,75 +90,118 @@ export function StoreProvider({ children }) {
     });
   }, [update]);
 
-  const subscribeToCode = useCallback((code) => {
-    if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
-    if (!code) return;
-    unsubRef.current = subscribe(code, (cloud) => {
-      if (!cloud || !cloud.jsonData) return;
-      try {
-        const parsed = JSON.parse(cloud.jsonData);
-        const cloudModified = cloud.lastModified || 0;
-        const localModified = dataRef.current._lastModified || 0;
-        if (cloudModified > localModified) {
-          const merged = mergeWithDefaults(parsed);
-          merged._lastModified = cloudModified;
-          persistToStorage(merged);
-          setData(merged);
-        }
-        setSyncStatus('connected');
-      } catch (e) {
-        console.warn('Failed to process cloud update', e);
-      }
-    });
+  const adoptCloud = useCallback((cloud, fallbackModified = 0) => {
+    try {
+      const parsed = mergeWithDefaults(JSON.parse(cloud.jsonData));
+      parsed._lastModified = cloud.lastModified || fallbackModified;
+      persistToStorage(parsed);
+      setData(parsed);
+      return parsed;
+    } catch (e) {
+      console.warn('Failed to adopt cloud doc', e);
+      return null;
+    }
   }, []);
 
-  const enableSync = useCallback(async (rawCode) => {
-    const code = String(rawCode || '').trim().toLowerCase();
-    if (!code || code.length < 4) return false;
-    localStorage.setItem(SYNC_CODE_KEY, code);
-    setSyncCode(code);
-    setSyncStatus('syncing');
-    const cloud = await pullDoc(code);
-    if (cloud && cloud.jsonData) {
+  const startSubscription = useCallback((uid) => {
+    if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+    if (!uid) return;
+    unsubRef.current = subscribe(uid, (cloud) => {
+      if (!cloud || !cloud.jsonData) return;
       const cloudModified = cloud.lastModified || 0;
       const localModified = dataRef.current._lastModified || 0;
-      if (cloudModified > localModified) {
-        try {
-          const parsed = mergeWithDefaults(JSON.parse(cloud.jsonData));
-          parsed._lastModified = cloudModified;
-          persistToStorage(parsed);
-          setData(parsed);
-        } catch {}
-      } else {
-        await pushDoc(code, { ...dataRef.current, _lastModified: Date.now() });
-      }
-    } else {
-      await pushDoc(code, { ...dataRef.current, _lastModified: Date.now() });
-    }
-    subscribeToCode(code);
-    setSyncStatus('connected');
-    return true;
-  }, [subscribeToCode]);
+      if (cloudModified > localModified) adoptCloud(cloud, cloudModified);
+      setSyncStatus('connected');
+    });
+  }, [adoptCloud]);
 
-  const disableSync = useCallback(() => {
-    localStorage.removeItem(SYNC_CODE_KEY);
-    setSyncCode('');
-    setSyncStatus('offline');
+  const migrateSyncCodeIfAny = useCallback(async (uid) => {
+    const legacy = localStorage.getItem(SYNC_CODE_KEY);
+    if (!legacy) return;
+    try {
+      const legacyDoc = await pullDoc(legacy);
+      if (legacyDoc?.jsonData) {
+        const legacyModified = legacyDoc.lastModified || 0;
+        const localModified = dataRef.current._lastModified || 0;
+        if (legacyModified > localModified) adoptCloud(legacyDoc, legacyModified);
+        const payload = { ...dataRef.current, _lastModified: Date.now() };
+        await pushDoc(uid, payload);
+      }
+    } catch (e) {
+      console.warn('sync-code migration failed', e);
+    } finally {
+      localStorage.removeItem(SYNC_CODE_KEY);
+    }
+  }, [adoptCloud]);
+
+  const onSignedIn = useCallback(async (next) => {
+    setUser(next);
+    setSyncStatus('syncing');
+    await migrateSyncCodeIfAny(next.uid);
+    const cloud = await pullDoc(next.uid);
+    if (cloud?.jsonData) {
+      const cloudModified = cloud.lastModified || 0;
+      const localModified = dataRef.current._lastModified || 0;
+      if (cloudModified > localModified) adoptCloud(cloud, cloudModified);
+      else await pushDoc(next.uid, { ...dataRef.current, _lastModified: Date.now() });
+    } else {
+      await pushDoc(next.uid, { ...dataRef.current, _lastModified: Date.now() });
+    }
+    startSubscription(next.uid);
+    setSyncStatus('connected');
+  }, [adoptCloud, migrateSyncCodeIfAny, startSubscription]);
+
+  useEffect(() => {
+    const unsub = onAuthChanged(async (fbUser) => {
+      setAuthReady(true);
+      const next = pickUser(fbUser);
+      if (!next) {
+        setUser(null);
+        setSyncStatus('offline');
+        if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+        return;
+      }
+      if (userRef.current?.uid === next.uid) { setUser(next); return; }
+      await onSignedIn(next);
+    });
+    return () => {
+      if (typeof unsub === 'function') unsub();
+      if (unsubRef.current) unsubRef.current();
+      clearTimeout(pushTimer.current);
+    };
+  }, [onSignedIn]);
+
+  const signIn = useCallback(async () => {
+    try {
+      setSigningIn(true);
+      await signInWithGoogle();
+    } catch (e) {
+      console.warn('Google sign-in failed', e);
+      alert('Sign-in failed — try again or check your popup blocker.');
+    } finally {
+      setSigningIn(false);
+    }
+  }, []);
+
+  const signOutAction = useCallback(async () => {
+    clearTimeout(pushTimer.current);
     if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
+    await signOutUser();
   }, []);
 
   const forceSync = useCallback(async () => {
-    if (!syncCodeRef.current) return;
+    if (!userRef.current) return;
     setSyncStatus('syncing');
-    const ok = await pushDoc(syncCodeRef.current, { ...dataRef.current, _lastModified: Date.now() });
+    const ok = await pushDoc(userRef.current.uid, { ...dataRef.current, _lastModified: Date.now() });
     setSyncStatus(ok ? 'connected' : 'offline');
   }, []);
 
   const resetAll = useCallback(() => {
     const fresh = buildDefaultData();
+    fresh._lastModified = Date.now();
     persistToStorage(fresh);
     setData(fresh);
-    if (syncCodeRef.current) pushDoc(syncCodeRef.current, { ...fresh, _lastModified: Date.now() });
+    if (userRef.current) pushDoc(userRef.current.uid, fresh);
   }, []);
 
   const importData = useCallback((raw) => {
@@ -147,7 +210,7 @@ export function StoreProvider({ children }) {
       parsed._lastModified = Date.now();
       persistToStorage(parsed);
       setData(parsed);
-      if (syncCodeRef.current) pushDoc(syncCodeRef.current, parsed);
+      if (userRef.current) pushDoc(userRef.current.uid, parsed);
       return true;
     } catch (e) {
       console.warn('Import failed', e);
@@ -155,29 +218,21 @@ export function StoreProvider({ children }) {
     }
   }, []);
 
-  useEffect(() => {
-    if (syncCode) enableSync(syncCode);
-    return () => {
-      if (unsubRef.current) unsubRef.current();
-      clearTimeout(pushTimer.current);
-    };
-    // run once on mount
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-  }, []);
-
   const value = useMemo(() => ({
     data,
     update,
     setValue,
+    user,
+    authReady,
+    signingIn,
+    signIn,
+    signOut: signOutAction,
     syncStatus,
-    syncCode,
-    syncEnabled: !!syncCode,
-    enableSync,
-    disableSync,
+    syncEnabled: !!user,
     forceSync,
     resetAll,
     importData
-  }), [data, update, setValue, syncStatus, syncCode, enableSync, disableSync, forceSync, resetAll, importData]);
+  }), [data, update, setValue, user, authReady, signingIn, signIn, signOutAction, syncStatus, forceSync, resetAll, importData]);
 
   return <StoreCtx.Provider value={value}>{children}</StoreCtx.Provider>;
 }
