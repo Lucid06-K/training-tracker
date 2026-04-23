@@ -18,7 +18,7 @@ import {
   parseNumber,
   todayStr
 } from '../store/utils.js';
-import { RATING_LABELS, WARMUP_ROUTINES } from '../store/defaults.js';
+import { EXERCISE_ALTERNATIVES, RATING_LABELS, WARMUP_ROUTINES } from '../store/defaults.js';
 
 const BOULDER_GRADES = ['V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10+'];
 
@@ -254,17 +254,34 @@ function PresetChips({ options, value, onChange, format }) {
   );
 }
 
-function ExerciseRow({ ex, logEntry, onUpdateSet, onToggleSet }) {
+function ExerciseRow({ ex, logEntry, swap, onUpdateSet, onToggleSet, onSwap }) {
   const sets = logEntry?.sets || [];
   const allDone = sets.length > 0 && sets.every((s) => s.done);
+  const display = swap || ex;
+  const alts = EXERCISE_ALTERNATIVES[ex.id] || [];
+  const hasSwap = !!alts.length;
   return (
     <div className={`tt-ex ${allDone ? 'done' : ''}`}>
       <div className="tt-ex-hd">
-        <div className="tt-ex-nm">{ex.name}</div>
+        <div className="tt-ex-nm">
+          {display.name}
+          {swap && <span className="tt-muted" style={{ fontSize: 10, marginLeft: 6 }}>(swapped)</span>}
+        </div>
+        {hasSwap && (
+          <button
+            type="button"
+            className="tt-btn tt-btn-ghost tt-btn-sm"
+            onClick={() => onSwap(ex)}
+            aria-label={`Swap ${ex.name}`}
+            title="Swap exercise"
+          >
+            {Icons.edit}
+          </button>
+        )}
       </div>
       <div className="tt-ex-meta">
-        {ex.equipment && <>{ex.equipment} · </>}
-        {ex.weight && <>{ex.weight} · </>}
+        {display.equipment && <>{display.equipment} · </>}
+        {display.weight && <>{display.weight} · </>}
         {ex.reps} reps · {ex.rest}s rest
       </div>
       {sets.map((s, i) => (
@@ -301,8 +318,49 @@ function ExerciseRow({ ex, logEntry, onUpdateSet, onToggleSet }) {
   );
 }
 
+function SwapModal({ exercise, currentDate, onClose, update }) {
+  if (!exercise) return null;
+  const alts = EXERCISE_ALTERNATIVES[exercise.id] || [];
+
+  const pick = (alt) => {
+    update((d) => {
+      const l = d.logs[currentDate];
+      if (!l) return d;
+      if (!l.swaps) l.swaps = {};
+      if (alt) l.swaps[exercise.id] = { name: alt.name, equipment: alt.equipment, weight: alt.weight };
+      else delete l.swaps[exercise.id];
+      return d;
+    });
+    onClose();
+  };
+
+  return (
+    <Modal open onClose={onClose} title={`Swap · ${exercise.name}`}>
+      <p className="tt-muted" style={{ fontSize: 12, marginBottom: 10 }}>
+        Pick an alternative for this session. Your sets keep their schedule (reps / rest), just the movement changes.
+      </p>
+      {alts.map((alt, i) => (
+        <button
+          key={i}
+          type="button"
+          className="tt-card-opaque"
+          onClick={() => pick(alt)}
+          style={{ width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: 8, border: '1px solid var(--border)' }}
+        >
+          <div style={{ fontWeight: 600 }}>{alt.name}</div>
+          <div className="tt-muted" style={{ fontSize: 11 }}>{alt.equipment} · {alt.weight}</div>
+        </button>
+      ))}
+      <button className="tt-btn tt-btn-ghost tt-btn-block" style={{ marginTop: 8 }} onClick={() => pick(null)}>
+        Revert to original
+      </button>
+    </Modal>
+  );
+}
+
 function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
   const showStretch = !!data.settings?.showStretchSection;
+  const [swapTarget, setSwapTarget] = useState(null);
 
   const updateSet = (exId, si, field, val) => {
     update((d) => {
@@ -355,12 +413,20 @@ function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
               key={ex.id}
               ex={ex}
               logEntry={log.exercises?.[ex.id]}
+              swap={log.swaps?.[ex.id]}
               onUpdateSet={updateSet}
               onToggleSet={toggleSet}
+              onSwap={setSwapTarget}
             />
           ))}
         </div>
       ))}
+      <SwapModal
+        exercise={swapTarget}
+        currentDate={currentDate}
+        onClose={() => setSwapTarget(null)}
+        update={update}
+      />
     </div>
   );
 }
