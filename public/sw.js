@@ -3,7 +3,7 @@
 // - Hashed assets / static files: stale-while-revalidate.
 // Cache name is bumped by Vite at build time via placeholder substitution.
 const CACHE_NAME = 'training-tracker-__BUILD_ID__';
-const PRECACHE = ['/manifest.json', '/apple-touch-icon.png', '/icon-192.png', '/icon-512.png'];
+const PRECACHE = ['./manifest.json', './apple-touch-icon.png', './icon-192.png', './icon-512.png'];
 
 self.addEventListener('install', (e) => {
   e.waitUntil(
@@ -44,7 +44,7 @@ self.addEventListener('fetch', (e) => {
           }
           return res;
         })
-        .catch(() => caches.match(req).then((hit) => hit || caches.match('/')))
+        .catch(() => caches.match(req).then((hit) => hit || caches.match('./')))
     );
     return;
   }

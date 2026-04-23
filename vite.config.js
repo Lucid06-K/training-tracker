@@ -20,6 +20,7 @@ function swBuildId() {
 }
 
 export default defineConfig({
+  base: '/training-tracker/',
   plugins: [react(), swBuildId()],
   build: {
     outDir: 'dist',
