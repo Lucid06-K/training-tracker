@@ -82,7 +82,7 @@ export function OpaqueCard({ children, className = '' }) {
   return <div className={`tt-card-opaque ${className}`}>{children}</div>;
 }
 
-export function Modal({ open, onClose, title, children }) {
+export function Modal({ open, onClose, title, children, centered = false }) {
   useEffect(() => {
     if (!open) return;
     const esc = (e) => e.key === 'Escape' && onClose && onClose();
@@ -91,9 +91,19 @@ export function Modal({ open, onClose, title, children }) {
   }, [open, onClose]);
   if (!open) return null;
   return (
-    <div className="tt-modal-scrim" onClick={onClose}>
-      <div className="tt-modal" onClick={(e) => e.stopPropagation()} role="dialog" aria-modal="true">
-        <div className="tt-modal-handle" />
+    <div
+      className="tt-modal-scrim"
+      style={centered ? { alignItems: 'center', padding: '0 16px' } : undefined}
+      onClick={onClose}
+    >
+      <div
+        className="tt-modal"
+        style={centered ? { borderRadius: 24, width: '100%', padding: 22 } : undefined}
+        onClick={(e) => e.stopPropagation()}
+        role="dialog"
+        aria-modal="true"
+      >
+        {!centered && <div className="tt-modal-handle" />}
         {title && (
           <div className="tt-modal-hd">
             <h3>{title}</h3>

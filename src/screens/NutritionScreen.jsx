@@ -96,8 +96,7 @@ function EditMeasurementsModal({ open, onClose, onSave, initial }) {
 
 export function NutritionScreen() {
   const { data, update } = useStore();
-  const today = todayStr();
-  const [currentDate] = useState(today);
+  const currentDate = todayStr();
   const [mealModalOpen, setMealModalOpen] = useState(false);
   const [measModalOpen, setMeasModalOpen] = useState(false);
 

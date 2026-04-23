@@ -12,6 +12,7 @@ import {
   getISOWeek,
   getWarmupType,
   getWeekDates,
+  getYouTubeId,
   haptic,
   isBouldering,
   isDragonBoating,
@@ -269,12 +270,13 @@ function PresetChips({ options, value, onChange, format }) {
   );
 }
 
-function ExerciseRow({ ex, logEntry, swap, onUpdateSet, onToggleSet, onSwap }) {
+function ExerciseRow({ ex, logEntry, swap, onUpdateSet, onToggleSet, onSwap, logExists }) {
   const sets = logEntry?.sets || [];
   const allDone = sets.length > 0 && sets.every((s) => s.done);
   const display = swap || ex;
   const alts = EXERCISE_ALTERNATIVES[ex.id] || [];
-  const hasSwap = !!alts.length;
+  const hasSwap = !!alts.length && !!logExists;
+  const videoId = getYouTubeId(display.video);
   return (
     <div className={`tt-ex ${allDone ? 'done' : ''}`}>
       <div className="tt-ex-hd">
@@ -282,22 +284,39 @@ function ExerciseRow({ ex, logEntry, swap, onUpdateSet, onToggleSet, onSwap }) {
           {display.name}
           {swap && <span className="tt-muted" style={{ fontSize: 10, marginLeft: 6 }}>(swapped)</span>}
         </div>
-        {hasSwap && (
-          <button
-            type="button"
-            className="tt-btn tt-btn-ghost tt-btn-sm"
-            onClick={() => onSwap(ex)}
-            aria-label={`Swap ${ex.name}`}
-            title="Swap exercise"
-          >
-            {Icons.edit}
-          </button>
-        )}
+        <div style={{ display: 'flex', gap: 4, alignItems: 'center' }}>
+          {videoId && (
+            <a
+              href={display.video}
+              target="_blank"
+              rel="noopener noreferrer"
+              className="tt-btn tt-btn-ghost tt-btn-sm"
+              aria-label={`Watch ${display.name} tutorial`}
+              title="Watch tutorial"
+              style={{ color: '#ff0000' }}
+            >
+              {Icons.play}
+            </a>
+          )}
+          {hasSwap && (
+            <button
+              type="button"
+              className="tt-btn tt-btn-ghost tt-btn-sm"
+              onClick={() => onSwap(ex)}
+              aria-label={`Swap ${ex.name}`}
+              title="Swap exercise"
+            >
+              {Icons.edit}
+            </button>
+          )}
+        </div>
       </div>
       <div className="tt-ex-meta">
         {display.equipment && <>{display.equipment} · </>}
         {display.weight && <>{display.weight} · </>}
-        {ex.reps} reps · {ex.rest}s rest
+        {ex.reps != null && ex.reps !== '' ? `${ex.reps} reps` : ''}
+        {ex.reps != null && ex.reps !== '' && ex.rest != null ? ' · ' : ''}
+        {ex.rest != null ? `${ex.rest}s rest` : ''}
       </div>
       {sets.map((s, i) => (
         <div key={i} className="tt-set">
@@ -350,8 +369,8 @@ function SwapModal({ exercise, currentDate, onClose, update }) {
   };
 
   return (
-    <Modal open onClose={onClose} title={`Swap · ${exercise.name}`}>
-      <p className="tt-muted" style={{ fontSize: 12, marginBottom: 10 }}>
+    <Modal open centered onClose={onClose} title={`Swap · ${exercise.name}`}>
+      <p className="tt-muted" style={{ fontSize: 12, marginBottom: 12 }}>
         Pick an alternative for this session. Your sets keep their schedule (reps / rest), just the movement changes.
       </p>
       {alts.map((alt, i) => (
@@ -432,6 +451,7 @@ function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
               onUpdateSet={updateSet}
               onToggleSet={toggleSet}
               onSwap={setSwapTarget}
+              logExists={!!log}
             />
           ))}
         </div>

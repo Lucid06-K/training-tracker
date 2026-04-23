@@ -112,10 +112,15 @@ function WeeklyStats({ data }) {
       0
     );
   }, 0);
-  const wkProtein = wk.reduce((s, d) => {
-    const n = data.nutrition?.[d];
-    return s + (n ? n.meals.reduce((ss, m) => ss + (m.protein || 0), 0) : 0);
-  }, 0);
+  let wkProtein = 0;
+  let wkProteinDays = 0;
+  wk.forEach((d) => {
+    const meals = data.nutrition?.[d]?.meals;
+    if (meals && meals.length > 0) {
+      wkProteinDays++;
+      wkProtein += meals.reduce((ss, m) => ss + (m.protein || 0), 0);
+    }
+  });
   const wkPRs = wk.filter((d) => Object.values(data.prs || {}).some((p) => p.date === d)).length;
   const volFmt = wkVol >= 1000 ? `${Math.round(wkVol / 1000)}k` : Math.round(wkVol);
 
@@ -125,7 +130,7 @@ function WeeklyStats({ data }) {
         <div className="tt-stat"><div className="tt-stat-v">{wkCompleted}/7</div><div className="tt-stat-l">Sessions</div></div>
         <div className="tt-stat"><div className="tt-stat-v">{volFmt}</div><div className="tt-stat-l">Volume (kg)</div></div>
         <div className="tt-stat"><div className="tt-stat-v">{wkPRs}</div><div className="tt-stat-l">PRs Hit</div></div>
-        <div className="tt-stat"><div className="tt-stat-v">{Math.round(wkProtein / 7)}g</div><div className="tt-stat-l">Avg Protein/Day</div></div>
+        <div className="tt-stat"><div className="tt-stat-v">{wkProteinDays ? `${Math.round(wkProtein / wkProteinDays)}g` : '—'}</div><div className="tt-stat-l">Avg Protein/Day</div></div>
       </div>
     </Card>
   );
