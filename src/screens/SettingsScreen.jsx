@@ -1,8 +1,8 @@
-import { useRef } from 'react';
-import { Page, Card, Segmented } from '../kit/AppShell.jsx';
+import { useMemo, useRef, useState } from 'react';
+import { Page, Card, Modal, Segmented } from '../kit/AppShell.jsx';
 import { Icons } from '../kit/Icons.jsx';
 import { useStore } from '../store/StoreProvider.jsx';
-import { DAYS, parseNumber, todayStr } from '../store/utils.js';
+import { DAYS, deepClone, parseNumber, todayStr, uid, validateVideoUrl } from '../store/utils.js';
 
 function NumberField({ label, value, onChange, step = 1, unit }) {
   return (
@@ -77,6 +77,228 @@ function GoogleButton({ onClick, signingIn }) {
   );
 }
 
+function ExerciseEditor({ ex, onChange, onRemove, onMove, isFirst, isLast }) {
+  const [open, setOpen] = useState(false);
+  const videoErr = ex.video && !validateVideoUrl(ex.video);
+  return (
+    <div className="tt-card-opaque" style={{ marginBottom: 8 }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6 }}>
+        <button
+          type="button"
+          className="tt-btn tt-btn-ghost tt-btn-sm"
+          onClick={() => setOpen((v) => !v)}
+          style={{ flex: 1, textAlign: 'left', padding: '4px 6px' }}
+        >
+          <div style={{ fontWeight: 600, fontSize: 13 }}>{ex.name || '(untitled)'}</div>
+          <div className="tt-muted" style={{ fontSize: 11 }}>
+            {ex.sets || 0} × {ex.reps || '—'} · {ex.weight || 'BW'}
+          </div>
+        </button>
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" disabled={isFirst} onClick={() => onMove(-1)} aria-label="Move up">↑</button>
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" disabled={isLast} onClick={() => onMove(1)} aria-label="Move down">↓</button>
+        <button type="button" className="tt-btn tt-btn-danger tt-btn-sm" onClick={onRemove} aria-label="Remove">{Icons.trash}</button>
+      </div>
+      {open && (
+        <div style={{ marginTop: 10, display: 'grid', gap: 8 }}>
+          <div>
+            <div className="tt-label">Name</div>
+            <input className="tt-input" value={ex.name} onChange={(e) => onChange({ ...ex, name: e.target.value })} />
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: 8 }}>
+            <div>
+              <div className="tt-label">Equipment</div>
+              <input className="tt-input" value={ex.equipment || ''} onChange={(e) => onChange({ ...ex, equipment: e.target.value })} />
+            </div>
+            <div>
+              <div className="tt-label">Suggested weight</div>
+              <input className="tt-input" value={ex.weight || ''} onChange={(e) => onChange({ ...ex, weight: e.target.value })} />
+            </div>
+          </div>
+          <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr 1fr', gap: 8 }}>
+            <div>
+              <div className="tt-label">Sets</div>
+              <input
+                className="tt-input"
+                type="number"
+                inputMode="numeric"
+                value={ex.sets || ''}
+                onChange={(e) => onChange({ ...ex, sets: parseNumber(e.target.value, 0) })}
+              />
+            </div>
+            <div>
+              <div className="tt-label">Reps</div>
+              <input className="tt-input" value={ex.reps || ''} onChange={(e) => onChange({ ...ex, reps: e.target.value })} />
+            </div>
+            <div>
+              <div className="tt-label">Rest (s)</div>
+              <input
+                className="tt-input"
+                type="number"
+                inputMode="numeric"
+                value={ex.rest ?? ''}
+                onChange={(e) => onChange({ ...ex, rest: parseNumber(e.target.value, 0) })}
+              />
+            </div>
+          </div>
+          <div>
+            <div className="tt-label">Video URL (YouTube only)</div>
+            <input
+              className="tt-input"
+              value={ex.video || ''}
+              onChange={(e) => onChange({ ...ex, video: e.target.value })}
+              placeholder="https://www.youtube.com/watch?v=…"
+            />
+            {videoErr && <div style={{ color: 'var(--danger)', fontSize: 11, marginTop: 4 }}>Only YouTube links accepted.</div>}
+          </div>
+        </div>
+      )}
+    </div>
+  );
+}
+
+function SectionEditor({ section, onChange, onRemove, onMove, isFirst, isLast }) {
+  const updateExercise = (idx, next) => onChange({ ...section, exercises: section.exercises.map((e, i) => i === idx ? next : e) });
+  const removeExercise = (idx) => onChange({ ...section, exercises: section.exercises.filter((_, i) => i !== idx) });
+  const moveExercise = (idx, delta) => {
+    const arr = [...section.exercises];
+    const j = idx + delta;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    onChange({ ...section, exercises: arr });
+  };
+  const addExercise = () => onChange({
+    ...section,
+    exercises: [...section.exercises, { id: uid(), name: '', equipment: '', weight: '', sets: 3, reps: '10', rest: 60, video: '' }]
+  });
+
+  return (
+    <div style={{ marginTop: 10, paddingTop: 10, borderTop: '1px solid var(--divider)' }}>
+      <div style={{ display: 'flex', alignItems: 'center', gap: 6, marginBottom: 6 }}>
+        <input
+          className="tt-input"
+          style={{ flex: 1 }}
+          value={section.name}
+          onChange={(e) => onChange({ ...section, name: e.target.value })}
+          placeholder="Section name"
+        />
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" disabled={isFirst} onClick={() => onMove(-1)} aria-label="Move section up">↑</button>
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" disabled={isLast} onClick={() => onMove(1)} aria-label="Move section down">↓</button>
+        <button type="button" className="tt-btn tt-btn-danger tt-btn-sm" onClick={onRemove} aria-label="Remove section">{Icons.trash}</button>
+      </div>
+      {section.exercises.map((ex, i) => (
+        <ExerciseEditor
+          key={ex.id || i}
+          ex={ex}
+          onChange={(next) => updateExercise(i, next)}
+          onRemove={() => removeExercise(i)}
+          onMove={(d) => moveExercise(i, d)}
+          isFirst={i === 0}
+          isLast={i === section.exercises.length - 1}
+        />
+      ))}
+      <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm tt-btn-ico" onClick={addExercise}>
+        <span className="tt-btn-ico-i">{Icons.plus}</span>Add exercise
+      </button>
+    </div>
+  );
+}
+
+function WorkoutEditorModal({ open, onClose, templateKey, template, onSave, canDelete, onDelete }) {
+  if (!open || !template) return null;
+  return (
+    <WorkoutEditorBody
+      key={templateKey}
+      template={template}
+      onClose={onClose}
+      onSave={onSave}
+      canDelete={canDelete}
+      onDelete={onDelete}
+    />
+  );
+}
+
+function WorkoutEditorBody({ template, onClose, onSave, canDelete, onDelete }) {
+  const [draft, setDraft] = useState(() => deepClone(template));
+  const [dirty, setDirty] = useState(false);
+
+  const patch = (next) => { setDraft(next); setDirty(true); };
+
+  const updateSection = (idx, next) => patch({ ...draft, sections: draft.sections.map((s, i) => i === idx ? next : s) });
+  const removeSection = (idx) => patch({ ...draft, sections: draft.sections.filter((_, i) => i !== idx) });
+  const moveSection = (idx, delta) => {
+    const arr = [...draft.sections];
+    const j = idx + delta;
+    if (j < 0 || j >= arr.length) return;
+    [arr[idx], arr[j]] = [arr[j], arr[idx]];
+    patch({ ...draft, sections: arr });
+  };
+  const addSection = () => patch({ ...draft, sections: [...draft.sections, { name: 'New section', exercises: [] }] });
+
+  const close = () => {
+    if (dirty && !window.confirm('Discard unsaved changes?')) return;
+    onClose();
+  };
+
+  return (
+    <Modal open onClose={close} title="Edit workout">
+      <div className="tt-label">Name</div>
+      <input
+        className="tt-input"
+        value={draft.name}
+        onChange={(e) => patch({ ...draft, name: e.target.value })}
+      />
+      {draft.sections.map((section, i) => (
+        <SectionEditor
+          key={i}
+          section={section}
+          onChange={(next) => updateSection(i, next)}
+          onRemove={() => removeSection(i)}
+          onMove={(d) => moveSection(i, d)}
+          isFirst={i === 0}
+          isLast={i === draft.sections.length - 1}
+        />
+      ))}
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm tt-btn-ico" onClick={addSection}>
+          <span className="tt-btn-ico-i">{Icons.plus}</span>Add section
+        </button>
+        {canDelete && (
+          <button
+            type="button"
+            className="tt-btn tt-btn-danger tt-btn-sm"
+            style={{ marginLeft: 'auto' }}
+            onClick={() => { if (window.confirm('Delete this template?')) { onDelete(); onClose(); } }}
+          >
+            Delete
+          </button>
+        )}
+      </div>
+      <div style={{ display: 'flex', gap: 8, marginTop: 14 }}>
+        <button type="button" className="tt-btn tt-btn-ghost" style={{ flex: 1 }} onClick={close}>Cancel</button>
+        <button type="button" className="tt-btn tt-btn-primary" style={{ flex: 1 }} onClick={() => { onSave(draft); onClose(); }}>Save</button>
+      </div>
+    </Modal>
+  );
+}
+
+function NewWorkoutModal({ open, onClose, onCreate }) {
+  const [name, setName] = useState('');
+  const submit = () => {
+    const trimmed = name.trim();
+    if (!trimmed) return;
+    onCreate(trimmed);
+    setName('');
+    onClose();
+  };
+  return (
+    <Modal open={open} onClose={onClose} title="New workout">
+      <div className="tt-label">Name</div>
+      <input className="tt-input" value={name} onChange={(e) => setName(e.target.value)} placeholder="e.g. Morning Pull" autoFocus />
+      <button className="tt-btn tt-btn-primary tt-btn-block" style={{ marginTop: 14 }} onClick={submit}>Create</button>
+    </Modal>
+  );
+}
+
 export function SettingsScreen({ theme, onTheme }) {
   const {
     data,
@@ -134,12 +356,32 @@ export function SettingsScreen({ theme, onTheme }) {
     resetAll();
   };
 
+  const [editorKey, setEditorKey] = useState(null);
+  const [newWorkoutOpen, setNewWorkoutOpen] = useState(false);
+
   const deleteCustomWorkout = (k) => {
     if (!window.confirm('Delete this custom template?')) return;
     update((d) => { delete d.customWorkouts[k]; return d; });
   };
 
+  const saveWorkoutTemplate = (k, next) => update((d) => {
+    if (d.customWorkouts?.[k]) d.customWorkouts[k] = next;
+    else d.workouts[k] = next;
+    return d;
+  });
+
+  const createWorkout = (name) => {
+    const k = uid();
+    update((d) => {
+      d.customWorkouts[k] = { name, sections: [{ name: 'Main Exercises', exercises: [] }] };
+      return d;
+    });
+    setEditorKey(k);
+  };
+
   const allWorkouts = { ...(data.workouts || {}), ...(data.customWorkouts || {}) };
+  const editorTemplate = editorKey ? allWorkouts[editorKey] : null;
+  const editorIsCustom = !!(editorKey && data.customWorkouts?.[editorKey]);
 
   return (
     <Page>
@@ -196,18 +438,24 @@ export function SettingsScreen({ theme, onTheme }) {
         })}
       </Card>
 
-      <Card title="Workout templates">
+      <Card
+        title="Workout templates"
+        trailing={
+          <button type="button" className="tt-btn tt-btn-primary tt-btn-sm" onClick={() => setNewWorkoutOpen(true)}>+ New</button>
+        }
+      >
         {Object.entries(allWorkouts).map(([k, w]) => {
           const ec = (w.sections || []).reduce((s, sec) => s + (sec.exercises || []).length, 0);
           const isCustom = !!data.customWorkouts?.[k];
           return (
             <div key={k} className="tt-row">
-              <div>
+              <div style={{ flex: 1 }}>
                 <div style={{ fontWeight: 600 }}>{w.name}</div>
                 <div className="tt-muted" style={{ fontSize: 11 }}>{w.sections?.length || 0} sections · {ec} exercises</div>
               </div>
+              <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" onClick={() => setEditorKey(k)}>Edit</button>
               {isCustom && (
-                <button type="button" className="tt-btn tt-btn-danger tt-btn-sm" onClick={() => deleteCustomWorkout(k)}>Delete</button>
+                <button type="button" className="tt-btn tt-btn-danger tt-btn-sm" onClick={() => deleteCustomWorkout(k)}>Del</button>
               )}
             </div>
           );
@@ -303,6 +551,20 @@ export function SettingsScreen({ theme, onTheme }) {
         <input ref={fileInput} type="file" accept=".json,application/json" style={{ display: 'none' }} onChange={onImport} />
       </Card>
 
+      <WorkoutEditorModal
+        open={!!editorKey}
+        templateKey={editorKey}
+        template={editorTemplate}
+        onClose={() => setEditorKey(null)}
+        onSave={(next) => saveWorkoutTemplate(editorKey, next)}
+        canDelete={editorIsCustom}
+        onDelete={() => deleteCustomWorkout(editorKey)}
+      />
+      <NewWorkoutModal
+        open={newWorkoutOpen}
+        onClose={() => setNewWorkoutOpen(false)}
+        onCreate={createWorkout}
+      />
     </Page>
   );
 }
