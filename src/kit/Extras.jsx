@@ -18,18 +18,22 @@ export function useCountUp(target, dur = 900) {
   return v;
 }
 
-export function PRToast({ exercise = 'Bench Press', weight = 42.5, reps = 8, prevWeight = 40, onDone }) {
+export function PRToast({ exercise, weight, reps, prevWeight = 0, onDone }) {
   useEffect(() => {
     const t = setTimeout(() => onDone && onDone(), 3800);
     return () => clearTimeout(t);
   }, [onDone]);
+  if (!exercise || weight == null || reps == null) return null;
   const gain = Math.max(0, weight - prevWeight);
+  const isFirstPR = prevWeight === 0;
   return (
     <div className="tt-pr-toast" role="status" aria-live="polite">
       <div className="tt-pr-ico">{Icons.trophy}</div>
       <div className="pr-ribbon">New Personal Record</div>
       <div className="pr-title">{exercise}</div>
-      <div className="pr-meta">Previous best · <b className="num">{prevWeight}kg × {reps}</b></div>
+      {isFirstPR
+        ? <div className="pr-meta">First recorded set</div>
+        : <div className="pr-meta">Previous best · <b className="num">{prevWeight}kg × {reps}</b></div>}
       <div className="pr-stats">
         <div className="pr-stat"><b className="num">{weight}kg</b><span>Weight</span></div>
         <div className="pr-stat"><b className="num">{reps}</b><span>Reps</span></div>
@@ -118,10 +122,10 @@ export function useOnClickOutside(ref, handler) {
       cb.current && cb.current(e);
     };
     document.addEventListener('mousedown', onClick);
-    document.addEventListener('touchstart', onClick);
+    document.addEventListener('touchstart', onClick, { passive: true });
     return () => {
       document.removeEventListener('mousedown', onClick);
-      document.removeEventListener('touchstart', onClick);
+      document.removeEventListener('touchstart', onClick, { passive: true });
     };
   }, [ref]);
 }

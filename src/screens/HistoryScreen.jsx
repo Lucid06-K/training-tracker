@@ -98,7 +98,7 @@ function exportPrint(data) {
   w.print();
 }
 
-function CalendarView({ data, month, year, setMonth, setYear }) {
+function CalendarView({ data, month, year, setMonth, setYear, onOpenDay }) {
   const firstDay = new Date(year, month, 1).getDay();
   const daysInMonth = new Date(year, month + 1, 0).getDate();
   const offset = (firstDay + 6) % 7;
@@ -130,11 +130,18 @@ function CalendarView({ data, month, year, setMonth, setYear }) {
     const isToday = ds === todayStr();
     const pillColor = log?.completed ? 'var(--success)' : log ? 'var(--warning)' : 'transparent';
     cells.push(
-      <div key={ds} className={`tt-cal-d ${isToday ? 'today' : ''}`} style={{ borderColor: log?.completed ? 'var(--success)' : undefined }}>
+      <button
+        type="button"
+        key={ds}
+        className={`tt-cal-d ${isToday ? 'today' : ''}`}
+        style={{ borderColor: log?.completed ? 'var(--success)' : undefined, background: 'transparent', cursor: 'pointer' }}
+        onClick={() => onOpenDay && onOpenDay(ds)}
+        aria-label={`Open ${ds}${log?.completed ? ' (completed)' : log ? ' (partial)' : ''}`}
+      >
         {d}
         <span className="pill" style={{ background: pillColor }} />
-        <span style={{ position: 'absolute', top: 3, right: 3, width: 4, height: 4, borderRadius: 999, background: color }} />
-      </div>
+        <span style={{ position: 'absolute', top: 3, right: 3, width: 7, height: 7, borderRadius: 999, background: color }} />
+      </button>
     );
   }
 
@@ -225,7 +232,7 @@ function ListView({ data, search, setSearch, onCopy, onOpen }) {
   );
 }
 
-export function HistoryScreen() {
+export function HistoryScreen({ onOpenDay } = {}) {
   const { data, update } = useStore();
   const now = new Date();
   const [view, setView] = useState('calendar');
@@ -269,7 +276,7 @@ export function HistoryScreen() {
   };
 
   const openLog = (ds) => {
-    window.alert(`Log from ${ds} — deep-link to Today coming in a future commit.`);
+    if (onOpenDay) onOpenDay(ds);
   };
 
   return (
@@ -296,7 +303,7 @@ export function HistoryScreen() {
       </div>
 
       {view === 'calendar' ? (
-        <CalendarView data={data} month={month} year={year} setMonth={setMonth} setYear={setYear} />
+        <CalendarView data={data} month={month} year={year} setMonth={setMonth} setYear={setYear} onOpenDay={onOpenDay} />
       ) : (
         <ListView data={data} search={search} setSearch={setSearch} onCopy={copyWorkout} onOpen={openLog} />
       )}

@@ -1,4 +1,4 @@
-import { lazy, Suspense, useEffect, useMemo, useState } from 'react';
+import { lazy, Suspense, useCallback, useEffect, useMemo, useState } from 'react';
 import { AppShell, Page, Card } from './kit/AppShell.jsx';
 import { Icons } from './kit/Icons.jsx';
 import { useStore } from './store/StoreProvider.jsx';
@@ -6,6 +6,7 @@ import { TodayScreen } from './screens/TodayScreen.jsx';
 import { HistoryScreen } from './screens/HistoryScreen.jsx';
 import { NutritionScreen } from './screens/NutritionScreen.jsx';
 import { SettingsScreen } from './screens/SettingsScreen.jsx';
+import { todayStr } from './store/utils.js';
 
 const ProgressScreen = lazy(() =>
   import('./screens/ProgressScreen.jsx').then((m) => ({ default: m.ProgressScreen }))
@@ -44,12 +45,18 @@ function formatSubtitle(tab, now) {
 export function App() {
   const [tab, setTab] = useState(() => localStorage.getItem(TAB_KEY) || 'today');
   const [theme, setTheme] = useState(() => localStorage.getItem(THEME_KEY) || 'dark');
+  const [currentDate, setCurrentDate] = useState(() => todayStr());
   useEffect(() => { localStorage.setItem(TAB_KEY, tab); }, [tab]);
   useEffect(() => { localStorage.setItem(THEME_KEY, theme); }, [theme]);
 
   const { syncStatus, user } = useStore();
   const now = useMemo(() => new Date(), []);
   const subtitle = formatSubtitle(tab, now);
+
+  const openDay = useCallback((ds) => {
+    if (ds) setCurrentDate(ds);
+    setTab('today');
+  }, []);
 
   return (
     <AppShell
@@ -61,8 +68,8 @@ export function App() {
       syncStatus={syncStatus}
       signedIn={!!user}
     >
-      {tab === 'today' && <TodayScreen />}
-      {tab === 'history' && <HistoryScreen />}
+      {tab === 'today' && <TodayScreen currentDate={currentDate} setCurrentDate={setCurrentDate} />}
+      {tab === 'history' && <HistoryScreen onOpenDay={openDay} />}
       {tab === 'nutrition' && <NutritionScreen />}
       {tab === 'progress' && (
         <Suspense fallback={<ProgressFallback />}>

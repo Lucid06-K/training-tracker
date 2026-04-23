@@ -185,7 +185,22 @@ function RestTimer({ enabled, sound }) {
           clearInterval(intervalRef.current);
           setRunning(false);
           haptic(200);
-          if (sound) { try { new AudioContext().close(); } catch {} }
+          if (sound) {
+            try {
+              const ctx = new (window.AudioContext || window.webkitAudioContext)();
+              [440, 554, 659].forEach((f, i) => {
+                const osc = ctx.createOscillator();
+                const g = ctx.createGain();
+                osc.connect(g);
+                g.connect(ctx.destination);
+                osc.frequency.value = f;
+                g.gain.value = 0.15;
+                osc.start(ctx.currentTime + i * 0.15);
+                osc.stop(ctx.currentTime + i * 0.15 + 0.12);
+              });
+              setTimeout(() => ctx.close().catch(() => {}), 800);
+            } catch {}
+          }
           return 0;
         }
         return s - 1;
@@ -668,9 +683,11 @@ function findExerciseName(data, exId) {
   return 'Exercise';
 }
 
-export function TodayScreen() {
+export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setCurrentDateProp } = {}) {
   const { data, update } = useStore();
-  const [currentDate, setCurrentDate] = useState(todayStr());
+  const [internalDate, setInternalDate] = useState(todayStr());
+  const currentDate = currentDateProp ?? internalDate;
+  const setCurrentDate = setCurrentDateProp ?? setInternalDate;
   const [ratingOpen, setRatingOpen] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [pr, setPR] = useState(null);

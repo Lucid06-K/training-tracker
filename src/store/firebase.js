@@ -20,8 +20,6 @@ import {
 const firebaseConfig = {
   apiKey: 'AIzaSyA3xnanInh2tu-qIbI6JfWd67UmkyWwBBw',
   authDomain: 'tkwp-f8078.firebaseapp.com',
-  databaseURL:
-    'https://tkwp-f8078-default-rtdb.asia-southeast1.firebasedatabase.app',
   projectId: 'tkwp-f8078',
   storageBucket: 'tkwp-f8078.firebasestorage.app',
   messagingSenderId: '872556487328',
