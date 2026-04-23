@@ -9,6 +9,8 @@ import {
   dayOfWeek,
   fmtElapsed,
   formatShortDate,
+  getISOWeek,
+  getWarmupType,
   getWeekDates,
   haptic,
   isBouldering,
@@ -16,9 +18,83 @@ import {
   parseNumber,
   todayStr
 } from '../store/utils.js';
-import { RATING_LABELS } from '../store/defaults.js';
+import { RATING_LABELS, WARMUP_ROUTINES } from '../store/defaults.js';
 
 const BOULDER_GRADES = ['V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10+'];
+
+const RECAP_KEY = 'training_recap_dismissed_week';
+
+function getLastWeekRecap(data) {
+  const wk = getWeekDates(-1);
+  let sessions = 0, volume = 0, dbDist = 0, bSends = 0, highGrade = -1, prs = 0;
+  let proteinDays = 0, proteinTotal = 0;
+  wk.forEach((ds) => {
+    const log = data.logs?.[ds];
+    if (log && log.completed) {
+      sessions++;
+      if (log.exercises) {
+        Object.values(log.exercises).forEach((e) => (e.sets || []).forEach((s) => {
+          if (s.done && s.weight && s.reps) volume += parseFloat(s.weight) * parseInt(s.reps);
+        }));
+      }
+      if (log.distance) dbDist += log.distance;
+      if (log.routes) {
+        const sends = Object.values(log.routes).reduce((s, v) => s + v, 0);
+        bSends += sends;
+        for (let i = BOULDER_GRADES.length - 1; i >= 0; i--) {
+          if ((log.routes[BOULDER_GRADES[i]] || 0) > 0 && i > highGrade) { highGrade = i; break; }
+        }
+      }
+    }
+    const nut = data.nutrition?.[ds];
+    if (nut?.meals) {
+      const dp = nut.meals.reduce((s, m) => s + (m.protein || 0), 0);
+      if (dp > 0) { proteinDays++; proteinTotal += dp; }
+    }
+  });
+  Object.values(data.prs || {}).forEach((p) => { if (wk.includes(p.date)) prs++; });
+  return {
+    sessions,
+    volume: Math.round(volume),
+    prs,
+    avgProtein: proteinDays ? Math.round(proteinTotal / proteinDays) : 0,
+    dbDist,
+    bSends,
+    highGrade: highGrade >= 0 ? BOULDER_GRADES[highGrade] : '—'
+  };
+}
+
+function WeeklyRecapCard({ data, onDismiss }) {
+  const r = useMemo(() => getLastWeekRecap(data), [data]);
+  const volFmt = r.volume >= 1000 ? `${(r.volume / 1000).toFixed(1)}k` : String(r.volume);
+  const distFmt = r.dbDist >= 1000 ? `${(r.dbDist / 1000).toFixed(1)}km` : r.dbDist ? `${r.dbDist}m` : '—';
+  const stats = [
+    { v: `${r.sessions}/7`, l: 'Sessions' },
+    { v: volFmt, l: 'Volume (kg)' },
+    { v: `${r.avgProtein}g`, l: 'Avg protein' },
+    { v: distFmt, l: 'Distance' },
+    ...(r.bSends ? [{ v: r.bSends, l: 'Sends' }, { v: r.highGrade, l: 'Peak grade' }] : [])
+  ];
+  return (
+    <Card
+      title="Last week"
+      trailing={
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" onClick={onDismiss} aria-label="Dismiss">
+          {Icons.close}
+        </button>
+      }
+    >
+      <div className={stats.length > 4 ? 'tt-stat-grid-3' : 'tt-stat-grid'}>
+        {stats.map((s, i) => (
+          <div key={i} className="tt-stat">
+            <div className="tt-stat-v">{s.v}</div>
+            <div className="tt-stat-l">{s.l}</div>
+          </div>
+        ))}
+      </div>
+    </Card>
+  );
+}
 
 function catTag(cat) {
   if (!cat) return null;
@@ -415,6 +491,82 @@ function SportLog({ log, currentDate, update }) {
   );
 }
 
+function WarmupCard({ currentDate, log, scheduled, update }) {
+  const [open, setOpen] = useState(false);
+  const type = getWarmupType(scheduled?.label, scheduled?.category);
+  const routine = WARMUP_ROUTINES[type] || WARMUP_ROUTINES.gym;
+  const done = !!log?.warmupDone;
+  const state = log?.warmup || {};
+
+  const toggle = (idx) => update((d) => {
+    const l = d.logs[currentDate];
+    if (!l) return d;
+    if (!l.warmup) l.warmup = {};
+    l.warmup[idx] = !l.warmup[idx];
+    if (routine.every((_, i) => l.warmup[i])) l.warmupDone = true;
+    return d;
+  });
+
+  const markAllDone = () => update((d) => {
+    const l = d.logs[currentDate];
+    if (!l) return d;
+    l.warmup = Object.fromEntries(routine.map((_, i) => [i, true]));
+    l.warmupDone = true;
+    return d;
+  });
+
+  const reset = () => update((d) => {
+    const l = d.logs[currentDate];
+    if (!l) return d;
+    l.warmup = {};
+    l.warmupDone = false;
+    return d;
+  });
+
+  if (done && !open) {
+    return (
+      <div className="tt-banner tt-banner-success" style={{ cursor: 'pointer' }} onClick={() => setOpen(true)}>
+        <span style={{ width: 16, height: 16, display: 'inline-flex', color: 'var(--success)' }}>{Icons.check}</span>
+        <div className="sp" style={{ fontWeight: 600 }}>Warm-up complete</div>
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" onClick={(e) => { e.stopPropagation(); reset(); }}>Reset</button>
+      </div>
+    );
+  }
+
+  return (
+    <div className="tt-card-opaque">
+      <div style={{ display: 'flex', alignItems: 'center', gap: 8, marginBottom: 10 }}>
+        <div className="tt-eyebrow" style={{ margin: 0 }}>Warm-up · {type}</div>
+        <div style={{ marginLeft: 'auto' }}>
+          <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" onClick={markAllDone}>Skip to done</button>
+        </div>
+      </div>
+      {routine.map((item, i) => {
+        const isDone = !!state[i];
+        return (
+          <div key={i} className="tt-set" style={{ gap: 10, padding: '6px 0' }}>
+            <button
+              type="button"
+              className={`tt-chk ${isDone ? 'on' : ''}`}
+              style={{ marginLeft: 0 }}
+              onClick={() => toggle(i)}
+              aria-label={isDone ? 'Undo' : 'Mark done'}
+            >
+              {isDone ? Icons.check : null}
+            </button>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600, fontSize: 13, textDecoration: isDone ? 'line-through' : 'none', color: isDone ? 'var(--fg-3)' : 'var(--fg-1)' }}>
+                {item.name}
+              </div>
+              <div className="tt-muted" style={{ fontSize: 11 }}>{item.duration} · {item.desc}</div>
+            </div>
+          </div>
+        );
+      })}
+    </div>
+  );
+}
+
 function RatingModal({ open, onClose, onRate }) {
   return (
     <Modal open={open} onClose={onClose} title="How did that feel?">
@@ -456,6 +608,14 @@ export function TodayScreen() {
   const [ratingOpen, setRatingOpen] = useState(false);
   const [confetti, setConfetti] = useState(false);
   const [pr, setPR] = useState(null);
+  const [recapDismissed, setRecapDismissed] = useState(() => {
+    return localStorage.getItem(RECAP_KEY) === getISOWeek(new Date());
+  });
+  const showRecap = new Date().getDay() === 1 && !recapDismissed;
+  const dismissRecap = () => {
+    localStorage.setItem(RECAP_KEY, getISOWeek(new Date()));
+    setRecapDismissed(true);
+  };
 
   const dow = dayOfWeek(currentDate);
   const scheduled = data.schedule?.[dow];
@@ -514,6 +674,8 @@ export function TodayScreen() {
     <Page>
       <WeekStrip current={currentDate} setCurrent={setCurrentDate} data={data} />
 
+      {showRecap && <WeeklyRecapCard data={data} onDismiss={dismissRecap} />}
+
       {streak >= 3 && !log && (
         <Banner kind="tip" icon={Icons.flame}>
           {streak}-day streak · consider a rest day or light session.
@@ -537,6 +699,9 @@ export function TodayScreen() {
           title={scheduled.label}
           trailing={catTag(data.categories?.[scheduled.category])}
         >
+          {log && !log.completed && (
+            <WarmupCard currentDate={currentDate} log={log} scheduled={scheduled} update={update} />
+          )}
           {template && !log && (
             <button className="tt-btn tt-btn-primary tt-btn-block" onClick={startWorkout}>
               Start Workout
