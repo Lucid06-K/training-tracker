@@ -177,7 +177,18 @@ export function StoreProvider({ children }) {
       await signInWithGoogle();
     } catch (e) {
       console.warn('Google sign-in failed', e);
-      alert('Sign-in failed — try again or check your popup blocker.');
+      const code = e?.code || '';
+      if (code === 'auth/popup-closed-by-user' || code === 'auth/cancelled-popup-request') {
+        // User dismissed the popup — no message needed.
+      } else if (code === 'auth/popup-blocked') {
+        alert('Sign-in popup was blocked by your browser. Please allow popups for this site and try again.');
+      } else if (code === 'auth/unauthorized-domain') {
+        alert('Sign-in failed: this domain is not authorized for Google sign-in.');
+      } else if (code === 'auth/network-request-failed') {
+        alert('Sign-in failed due to a network error. Please check your connection and try again.');
+      } else {
+        alert(`Sign-in failed${code ? ` (${code})` : ''}. Please try again.`);
+      }
     } finally {
       setSigningIn(false);
     }
