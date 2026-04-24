@@ -63,7 +63,12 @@ export async function signInWithGoogle() {
     const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (e) {
-    if (e?.code === 'auth/popup-blocked' || e?.code === 'auth/operation-not-supported-in-this-environment') {
+    const code = e?.code || '';
+    const shouldRedirect =
+      code === 'auth/popup-blocked' ||
+      code === 'auth/operation-not-supported-in-this-environment' ||
+      code === 'auth/web-storage-unsupported';
+    if (shouldRedirect) {
       await signInWithRedirect(auth, provider);
       return null;
     }
