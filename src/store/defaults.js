@@ -194,3 +194,28 @@ export function mergeWithDefaults(data) {
   if (data.profile.waterGoal === undefined) data.profile.waterGoal = 2.5;
   return data;
 }
+
+// Per-date maps are unioned; for overlapping keys the newer side wins. Singleton
+// fields (profile, settings, schedule, templates) are taken entirely from the
+// newer side. Prevents the whole document from being clobbered when two devices
+// edit on the same day.
+const DATE_KEYED_FIELDS = ['logs', 'nutrition', 'bodyweight', 'measurements', 'prs', 'exerciseNotes'];
+const SINGLETON_FIELDS = ['profile', 'categories', 'schedule', 'workouts', 'customWorkouts', 'settings'];
+
+export function mergeSyncData(local, cloud, localModified = 0, cloudModified = 0) {
+  const a = mergeWithDefaults(local || buildDefaultData());
+  const b = mergeWithDefaults(cloud || buildDefaultData());
+  const cloudNewer = cloudModified >= localModified;
+  const winner = cloudNewer ? b : a;
+  const loser = cloudNewer ? a : b;
+
+  const out = {};
+  SINGLETON_FIELDS.forEach((k) => { out[k] = winner[k]; });
+  DATE_KEYED_FIELDS.forEach((k) => {
+    const merged = { ...(loser[k] || {}) };
+    Object.entries(winner[k] || {}).forEach(([key, val]) => { merged[key] = val; });
+    out[k] = merged;
+  });
+  out._lastModified = Math.max(localModified, cloudModified) || Date.now();
+  return mergeWithDefaults(out);
+}

@@ -197,9 +197,12 @@ export function NutritionScreen() {
       </Card>
 
       <Card title="Water">
-        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 8, fontSize: 13 }}>
+        <div style={{ display: 'flex', justifyContent: 'space-between', marginBottom: 4, fontSize: 13 }}>
           <span>{nutri.waterL || 0}L</span>
           <span className="tt-muted">Goal · {waterGoal}L</span>
+        </div>
+        <div className="tt-muted" style={{ fontSize: 11, marginBottom: 8 }}>
+          Daily log — resets each day
         </div>
         <div className="tt-bar" style={{ marginBottom: 12 }}>
           <div className="tt-bar-fill" style={{ width: `${waterPct * 100}%`, background: 'var(--info)' }} />

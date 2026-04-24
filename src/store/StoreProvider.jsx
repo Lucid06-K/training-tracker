@@ -1,5 +1,5 @@
 import { createContext, useCallback, useContext, useEffect, useMemo, useRef, useState } from 'react';
-import { STORAGE_KEY, SYNC_CODE_KEY, buildDefaultData, mergeWithDefaults } from './defaults.js';
+import { STORAGE_KEY, SYNC_CODE_KEY, buildDefaultData, mergeWithDefaults, mergeSyncData } from './defaults.js';
 import {
   onAuthChanged,
   pullDoc,
@@ -90,18 +90,24 @@ export function StoreProvider({ children }) {
     });
   }, [update]);
 
-  const adoptCloud = useCallback((cloud, fallbackModified = 0) => {
+  const applyMerged = useCallback((merged) => {
+    persistToStorage(merged);
+    setData(merged);
+    return merged;
+  }, []);
+
+  const mergeFromCloud = useCallback((cloud, fallbackModified = 0) => {
     try {
-      const parsed = mergeWithDefaults(JSON.parse(cloud.jsonData));
-      parsed._lastModified = cloud.lastModified || fallbackModified;
-      persistToStorage(parsed);
-      setData(parsed);
-      return parsed;
+      const parsed = JSON.parse(cloud.jsonData);
+      const cloudModified = cloud.lastModified || fallbackModified;
+      const localModified = dataRef.current._lastModified || 0;
+      const merged = mergeSyncData(dataRef.current, parsed, localModified, cloudModified);
+      return applyMerged(merged);
     } catch (e) {
-      console.warn('Failed to adopt cloud doc', e);
+      console.warn('Failed to merge cloud doc', e);
       return null;
     }
-  }, []);
+  }, [applyMerged]);
 
   const startSubscription = useCallback((uid) => {
     if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
@@ -110,10 +116,11 @@ export function StoreProvider({ children }) {
       if (!cloud || !cloud.jsonData) return;
       const cloudModified = cloud.lastModified || 0;
       const localModified = dataRef.current._lastModified || 0;
-      if (cloudModified > localModified) adoptCloud(cloud, cloudModified);
+      // Only merge when cloud has news we haven't seen yet.
+      if (cloudModified > localModified) mergeFromCloud(cloud, cloudModified);
       setSyncStatus('connected');
     });
-  }, [adoptCloud]);
+  }, [mergeFromCloud]);
 
   const migrateSyncCodeIfAny = useCallback(async (uid) => {
     const legacy = localStorage.getItem(SYNC_CODE_KEY);
@@ -122,8 +129,7 @@ export function StoreProvider({ children }) {
       const legacyDoc = await pullDoc(legacy);
       if (legacyDoc?.jsonData) {
         const legacyModified = legacyDoc.lastModified || 0;
-        const localModified = dataRef.current._lastModified || 0;
-        if (legacyModified > localModified) adoptCloud(legacyDoc, legacyModified);
+        mergeFromCloud(legacyDoc, legacyModified);
         const payload = { ...dataRef.current, _lastModified: Date.now() };
         await pushDoc(uid, payload);
       }
@@ -132,7 +138,7 @@ export function StoreProvider({ children }) {
     } finally {
       localStorage.removeItem(SYNC_CODE_KEY);
     }
-  }, [adoptCloud]);
+  }, [mergeFromCloud]);
 
   const onSignedIn = useCallback(async (next) => {
     setUser(next);
@@ -140,16 +146,16 @@ export function StoreProvider({ children }) {
     await migrateSyncCodeIfAny(next.uid);
     const cloud = await pullDoc(next.uid);
     if (cloud?.jsonData) {
-      const cloudModified = cloud.lastModified || 0;
-      const localModified = dataRef.current._lastModified || 0;
-      if (cloudModified > localModified) adoptCloud(cloud, cloudModified);
-      else await pushDoc(next.uid, { ...dataRef.current, _lastModified: Date.now() });
+      const merged = mergeFromCloud(cloud, cloud.lastModified || 0);
+      // Always push the merged result so both sides converge.
+      const payload = { ...(merged || dataRef.current), _lastModified: Date.now() };
+      await pushDoc(next.uid, payload);
     } else {
       await pushDoc(next.uid, { ...dataRef.current, _lastModified: Date.now() });
     }
     startSubscription(next.uid);
     setSyncStatus('connected');
-  }, [adoptCloud, migrateSyncCodeIfAny, startSubscription]);
+  }, [mergeFromCloud, migrateSyncCodeIfAny, startSubscription]);
 
   useEffect(() => {
     const unsub = onAuthChanged(async (fbUser) => {
@@ -198,6 +204,12 @@ export function StoreProvider({ children }) {
     clearTimeout(pushTimer.current);
     if (unsubRef.current) { unsubRef.current(); unsubRef.current = null; }
     await signOutUser();
+    // Clear local copy of the previous user's data so the next user of this
+    // device doesn't see it. Their cloud copy is untouched.
+    const fresh = buildDefaultData();
+    fresh._lastModified = Date.now();
+    persistToStorage(fresh);
+    setData(fresh);
   }, []);
 
   const forceSync = useCallback(async () => {
@@ -222,10 +234,10 @@ export function StoreProvider({ children }) {
       persistToStorage(parsed);
       setData(parsed);
       if (userRef.current) pushDoc(userRef.current.uid, parsed);
-      return true;
+      return { ok: true };
     } catch (e) {
       console.warn('Import failed', e);
-      return false;
+      return { ok: false, error: e?.message || String(e) };
     }
   }, []);
 

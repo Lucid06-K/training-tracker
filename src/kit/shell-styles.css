@@ -11,7 +11,10 @@
   border-bottom:1px solid var(--border);max-width:480px;margin:0 auto}
 .tt-title{font-size:22px;font-weight:700;letter-spacing:-.02em;flex:1}
 .tt-sub{font-size:11px;color:var(--fg-3);font-weight:500;margin-top:2px;letter-spacing:.01em}
-.tt-sync{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3);font-weight:500}
+.tt-sync{display:flex;align-items:center;gap:6px;font-size:11px;color:var(--fg-3);font-weight:500;background:transparent;border:none;padding:4px 6px;border-radius:8px;font-family:inherit}
+button.tt-sync{cursor:pointer;transition:background var(--dur) var(--ease-out)}
+button.tt-sync:hover{background:var(--bg-2)}
+button.tt-sync:focus-visible{outline:2px solid var(--accent);outline-offset:1px}
 .tt-sync .dot{width:8px;height:8px;border-radius:50%;background:var(--success);box-shadow:0 0 0 3px var(--success-tint)}
 .tt-sync.off .dot{background:var(--fg-3);box-shadow:0 0 0 3px rgba(138,115,88,.18)}
 .tt-sync.syncing .dot{background:var(--warning);box-shadow:0 0 0 3px var(--warning-tint)}
@@ -359,3 +362,8 @@ select.tt-input{appearance:none;-webkit-appearance:none}
 .tt-confetti-layer{position:fixed;inset:0;overflow:hidden;pointer-events:none;z-index:75}
 .tt-confetti{position:absolute;top:-10%;width:10px;height:14px;border-radius:2px;animation:tt-conf 2.6s cubic-bezier(.4,0,.6,1) forwards}
 @keyframes tt-conf{0%{transform:translateY(-10%) rotate(0deg);opacity:1}100%{transform:translateY(110vh) rotate(720deg);opacity:0}}
+
+@media (prefers-reduced-motion: reduce){
+  *,*::before,*::after{animation-duration:.01ms !important;animation-iteration-count:1 !important;transition-duration:.01ms !important;scroll-behavior:auto !important}
+  .tt-confetti-layer{display:none}
+}

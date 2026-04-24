@@ -726,9 +726,14 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
   const isRest = scheduled?.category === 'rest';
 
   const template = scheduled ? data.workouts?.[scheduled.category] || data.customWorkouts?.[scheduled.category] : null;
+  const scheduledCat = scheduled ? data.categories?.[scheduled.category] : null;
+  const isActivityCategory = scheduledCat?.color === 'sport';
+  // Template is missing but the category is strength-like (upper/lower/etc.),
+  // meaning the schedule points at a template that no longer exists.
+  const templateMissing = !!scheduled && !template && !isActivityCategory && !isRest;
 
   const startWorkout = () => {
-    if (!scheduled) return;
+    if (!scheduled || templateMissing) return;
     update((d) => {
       const t = d.workouts[scheduled.category] || d.customWorkouts[scheduled.category];
       if (t) {
@@ -810,7 +815,12 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
               Start Workout
             </button>
           )}
-          {!template && !log && (
+          {templateMissing && !log && (
+            <Banner kind="tip" icon={Icons.bulb}>
+              No template found for this category. Edit your schedule or add a template in Settings → Workout templates.
+            </Banner>
+          )}
+          {!template && !templateMissing && !log && (
             <button className="tt-btn tt-btn-primary tt-btn-block" onClick={startWorkout}>
               Log Activity
             </button>
