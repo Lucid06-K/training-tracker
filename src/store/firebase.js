@@ -54,21 +54,40 @@ export function onAuthChanged(cb) {
   return onAuthStateChanged(auth, cb);
 }
 
+function shouldUseRedirect() {
+  if (typeof window === 'undefined') return false;
+  const ua = navigator.userAgent || '';
+  const isIOS = /iPad|iPhone|iPod/.test(ua) && !window.MSStream;
+  const isStandalone =
+    (window.matchMedia && window.matchMedia('(display-mode: standalone)').matches) ||
+    window.navigator.standalone === true;
+  // Popup auth is unreliable on iOS Safari and inside any home-screen PWA;
+  // skip straight to redirect, which is what Firebase recommends there.
+  return isIOS || isStandalone;
+}
+
 export async function signInWithGoogle() {
   const { auth } = getFirebase();
   if (!auth) throw new Error('Firebase not ready');
   const provider = new GoogleAuthProvider();
   provider.setCustomParameters({ prompt: 'select_account' });
+
+  if (shouldUseRedirect()) {
+    await signInWithRedirect(auth, provider);
+    return null;
+  }
+
   try {
     const result = await signInWithPopup(auth, provider);
     return result.user;
   } catch (e) {
     const code = e?.code || '';
-    const shouldRedirect =
+    const fallbackToRedirect =
       code === 'auth/popup-blocked' ||
       code === 'auth/operation-not-supported-in-this-environment' ||
-      code === 'auth/web-storage-unsupported';
-    if (shouldRedirect) {
+      code === 'auth/web-storage-unsupported' ||
+      code === 'auth/internal-error';
+    if (fallbackToRedirect) {
       await signInWithRedirect(auth, provider);
       return null;
     }
