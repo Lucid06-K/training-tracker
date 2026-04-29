@@ -44,6 +44,10 @@ export function PRToast({ exercise, weight, reps, prevWeight = 0, onDone }) {
 }
 
 export function Confetti({ count = 48 }) {
+  const reduced = typeof window !== 'undefined'
+    && window.matchMedia
+    && window.matchMedia('(prefers-reduced-motion: reduce)').matches;
+  if (reduced) return null;
   const colors = ['#b26a45', '#6d8a4c', '#c9993a', '#4c7086', '#c97c66', '#cd9657', '#d6a582'];
   const pieces = Array.from({ length: count }).map((_, i) => {
     const left = Math.random() * 100;

@@ -27,7 +27,14 @@ function exerciseName(allW, id) {
   return id;
 }
 
+const LARGE_EXPORT_THRESHOLD = 500;
+
 function exportCSV(data) {
+  const logCount = Object.keys(data.logs || {}).length;
+  if (logCount > LARGE_EXPORT_THRESHOLD &&
+      !window.confirm(`You have ${logCount} logged sessions — generating the CSV may take a few seconds and produce a large file. Continue?`)) {
+    return;
+  }
   const rows = [['Date', 'Label', 'Category', 'Duration (min)', 'Completed', 'Rating', 'Exercises', 'Total Sets', 'Volume (kg)', 'Distance (m)', 'Boulder Sends', 'Notes']];
   const allW = { ...data.workouts, ...data.customWorkouts };
   const csvField = (v) => `"${String(v ?? '').replace(/"/g, '""')}"`;
@@ -67,8 +74,16 @@ function exportCSV(data) {
 }
 
 function exportPrint(data) {
+  const logCount = Object.keys(data.logs || {}).length;
+  if (logCount > LARGE_EXPORT_THRESHOLD &&
+      !window.confirm(`You have ${logCount} logged sessions — the print preview may take a few seconds. Continue?`)) {
+    return;
+  }
   const w = window.open('', '_blank');
-  if (!w) return;
+  if (!w) {
+    alert('Could not open print window. Please allow popups for this site and try again.');
+    return;
+  }
   const allW = { ...data.workouts, ...data.customWorkouts };
   const esc = (s) => String(s ?? '').replace(/&/g, '&amp;').replace(/</g, '&lt;').replace(/>/g, '&gt;');
   let html = '<html><head><title>Training Report</title><style>body{font-family:system-ui,sans-serif;max-width:700px;margin:20px auto;font-size:13px}h1{font-size:20px}.entry{margin-bottom:16px;padding:10px;border:1px solid #ddd;border-radius:6px}.meta{color:#666;font-size:12px}table{width:100%;border-collapse:collapse;font-size:12px;margin-top:4px}th,td{padding:3px 6px;border:1px solid #ddd;text-align:left}th{background:#f5f5f5}</style></head><body>';

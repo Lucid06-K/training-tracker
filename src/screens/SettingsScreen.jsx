@@ -314,6 +314,7 @@ export function SettingsScreen({ theme, onTheme }) {
     importData
   } = useStore();
   const fileInput = useRef(null);
+  const audioSupported = typeof window !== 'undefined' && !!(window.AudioContext || window.webkitAudioContext);
 
   const setProfile = (field, val) => update((d) => { d.profile[field] = val === '' ? undefined : val; return d; });
   const setOverload = (key, val) => update((d) => {
@@ -343,9 +344,11 @@ export function SettingsScreen({ theme, onTheme }) {
     if (!f) return;
     const r = new FileReader();
     r.onload = (ev) => {
-      const ok = importData(ev.target.result);
-      alert(ok ? 'Imported.' : 'Invalid file.');
+      const result = importData(ev.target.result);
+      if (result.ok) alert('Imported.');
+      else alert(`Import failed: ${result.error || 'could not read file'}`);
     };
+    r.onerror = () => alert('Import failed: could not read file.');
     r.readAsText(f);
     e.target.value = '';
   };
@@ -421,6 +424,7 @@ export function SettingsScreen({ theme, onTheme }) {
               <input
                 className="tt-input"
                 placeholder="Activity"
+                maxLength={30}
                 value={s.label || ''}
                 onChange={(e) => setSchedule(i, 'label', e.target.value)}
               />
@@ -471,6 +475,7 @@ export function SettingsScreen({ theme, onTheme }) {
         />
         <Toggle
           label="Timer sound"
+          desc={audioSupported ? undefined : 'Not supported in this browser'}
           checked={!!data.settings?.restTimerSound}
           onChange={(v) => setPref('restTimerSound', v)}
         />

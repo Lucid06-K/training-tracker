@@ -49,7 +49,7 @@ export function App() {
   useEffect(() => { localStorage.setItem(TAB_KEY, tab); }, [tab]);
   useEffect(() => { localStorage.setItem(THEME_KEY, theme); }, [theme]);
 
-  const { syncStatus, user } = useStore();
+  const { syncStatus, user, authReady } = useStore();
   const now = useMemo(() => new Date(), []);
   const subtitle = formatSubtitle(tab, now);
 
@@ -57,6 +57,30 @@ export function App() {
     if (ds) setCurrentDate(ds);
     setTab('today');
   }, []);
+
+  const onSyncClick = useCallback(() => setTab('settings'), []);
+
+  if (!authReady) {
+    return (
+      <AppShell
+        tab={tab}
+        setTab={setTab}
+        theme={theme}
+        subtitle={subtitle}
+        leadingIcon={Icons.dumbbell}
+        syncStatus="syncing"
+        signedIn={false}
+      >
+        <Page>
+          <Card>
+            <div style={{ textAlign: 'center', padding: 30, color: 'var(--fg-3)' }}>
+              Loading…
+            </div>
+          </Card>
+        </Page>
+      </AppShell>
+    );
+  }
 
   return (
     <AppShell
@@ -67,6 +91,7 @@ export function App() {
       leadingIcon={Icons.dumbbell}
       syncStatus={syncStatus}
       signedIn={!!user}
+      onSyncClick={onSyncClick}
     >
       {tab === 'today' && <TodayScreen currentDate={currentDate} setCurrentDate={setCurrentDate} />}
       {tab === 'history' && <HistoryScreen onOpenDay={openDay} />}

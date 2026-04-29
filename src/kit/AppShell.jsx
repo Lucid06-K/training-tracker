@@ -1,5 +1,8 @@
-import { useEffect } from 'react';
+import { useEffect, useRef } from 'react';
 import { Icons } from './Icons.jsx';
+
+const FOCUSABLE_SELECTOR =
+  'a[href], area[href], input:not([disabled]), select:not([disabled]), textarea:not([disabled]), button:not([disabled]), iframe, object, embed, [tabindex]:not([tabindex="-1"]), [contenteditable="true"]';
 
 const TAB_META = {
   today: { title: "Today's Training", icon: Icons.clock, label: 'Today' },
@@ -9,7 +12,7 @@ const TAB_META = {
   settings: { title: 'Settings', icon: Icons.settings, label: 'Settings' }
 };
 
-export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline', signedIn = false, leadingIcon, children }) {
+export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline', signedIn = false, leadingIcon, onSyncClick, children }) {
   useEffect(() => {
     document.body.setAttribute('data-app-theme', theme);
     document.documentElement.setAttribute('data-theme', theme);
@@ -25,6 +28,13 @@ export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline',
       : syncStatus === 'syncing'
         ? 'Syncing…'
         : 'Offline';
+  const syncTitle = !signedIn
+    ? 'Sign in to sync across devices'
+    : syncStatus === 'connected'
+      ? 'Synced to cloud'
+      : syncStatus === 'syncing'
+        ? 'Syncing to cloud…'
+        : 'Offline — changes stored locally';
 
   return (
     <div className="tt-app" data-theme={theme}>
@@ -34,10 +44,23 @@ export function AppShell({ tab, setTab, theme, subtitle, syncStatus = 'offline',
           <div className="tt-title">{meta.title}</div>
           {subtitle && <div className="tt-sub">{subtitle}</div>}
         </div>
-        <div className={`tt-sync ${syncClass}`}>
-          <span className="dot" />
-          {syncLabel}
-        </div>
+        {onSyncClick ? (
+          <button
+            type="button"
+            className={`tt-sync ${syncClass}`}
+            onClick={onSyncClick}
+            title={syncTitle}
+            aria-label={syncTitle}
+          >
+            <span className="dot" />
+            {syncLabel}
+          </button>
+        ) : (
+          <div className={`tt-sync ${syncClass}`} title={syncTitle}>
+            <span className="dot" />
+            {syncLabel}
+          </div>
+        )}
       </div>
 
       {children}
@@ -83,12 +106,47 @@ export function OpaqueCard({ children, className = '' }) {
 }
 
 export function Modal({ open, onClose, title, children, centered = false }) {
+  const modalRef = useRef(null);
+  const returnFocusRef = useRef(null);
+
   useEffect(() => {
     if (!open) return;
-    const esc = (e) => e.key === 'Escape' && onClose && onClose();
-    window.addEventListener('keydown', esc);
-    return () => window.removeEventListener('keydown', esc);
+    returnFocusRef.current = document.activeElement;
+
+    const focusables = () =>
+      modalRef.current ? Array.from(modalRef.current.querySelectorAll(FOCUSABLE_SELECTOR)) : [];
+
+    // Focus the first focusable element (or the modal itself) when it opens.
+    const first = focusables()[0];
+    if (first) first.focus();
+    else if (modalRef.current) modalRef.current.focus();
+
+    const onKey = (e) => {
+      if (e.key === 'Escape') {
+        onClose && onClose();
+        return;
+      }
+      if (e.key !== 'Tab') return;
+      const items = focusables();
+      if (items.length === 0) { e.preventDefault(); return; }
+      const firstEl = items[0];
+      const lastEl = items[items.length - 1];
+      if (e.shiftKey && document.activeElement === firstEl) {
+        e.preventDefault();
+        lastEl.focus();
+      } else if (!e.shiftKey && document.activeElement === lastEl) {
+        e.preventDefault();
+        firstEl.focus();
+      }
+    };
+    window.addEventListener('keydown', onKey);
+    return () => {
+      window.removeEventListener('keydown', onKey);
+      const el = returnFocusRef.current;
+      if (el && typeof el.focus === 'function') el.focus();
+    };
   }, [open, onClose]);
+
   if (!open) return null;
   return (
     <div
@@ -97,11 +155,13 @@ export function Modal({ open, onClose, title, children, centered = false }) {
       onClick={onClose}
     >
       <div
+        ref={modalRef}
         className="tt-modal"
         style={centered ? { borderRadius: 24, width: '100%', padding: 22 } : undefined}
         onClick={(e) => e.stopPropagation()}
         role="dialog"
         aria-modal="true"
+        tabIndex={-1}
       >
         {!centered && <div className="tt-modal-handle" />}
         {title && (
