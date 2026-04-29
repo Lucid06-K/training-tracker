@@ -203,8 +203,12 @@ const DATE_KEYED_FIELDS = ['logs', 'nutrition', 'bodyweight', 'measurements', 'p
 const SINGLETON_FIELDS = ['profile', 'categories', 'schedule', 'workouts', 'customWorkouts', 'settings'];
 
 export function mergeSyncData(local, cloud, localModified = 0, cloudModified = 0) {
-  const a = mergeWithDefaults(local || buildDefaultData());
-  const b = mergeWithDefaults(cloud || buildDefaultData());
+  // Deep-clone first because mergeWithDefaults mutates its input — we don't
+  // want to mutate the live React state or the freshly-parsed cloud doc.
+  const cloneA = local ? JSON.parse(JSON.stringify(local)) : buildDefaultData();
+  const cloneB = cloud ? JSON.parse(JSON.stringify(cloud)) : buildDefaultData();
+  const a = mergeWithDefaults(cloneA);
+  const b = mergeWithDefaults(cloneB);
   const cloudNewer = cloudModified >= localModified;
   const winner = cloudNewer ? b : a;
   const loser = cloudNewer ? a : b;
