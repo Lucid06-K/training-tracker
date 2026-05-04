@@ -156,3 +156,81 @@ export function computeStreak(logs, scheduleMap) {
   }
   return streak;
 }
+
+// ---- Set suggestion (auto-prefill weight/reps) ----
+//
+// Strategy:
+// 1. If we have a previous completed session for this exercise, use last
+//    session's average weight. If every set hit the top of the rep range,
+//    bump by the category's overload increment (progressive overload).
+// 2. Otherwise fall back to the template weight × goal modifier (lower
+//    bound for first attempt, conservative).
+// 3. Reps prefill is the top of the template rep range so the user has
+//    something to aim for; they can adjust per set.
+//
+// Goal modifiers tweak the *starting* weight only, not the rep target —
+// the template's rep ranges already encode the goal. They're meant for
+// novel exercises where we have no history.
+
+const GOAL_WEIGHT_MOD = { strength: 1.1, hypertrophy: 1.0, endurance: 0.85 };
+
+export function parseRepRange(reps) {
+  if (reps == null) return { min: 0, max: 0 };
+  const m = String(reps).match(/(\d+)(?:\s*-\s*(\d+))?/);
+  if (!m) return { min: 0, max: 0 };
+  const min = parseInt(m[1], 10);
+  const max = m[2] ? parseInt(m[2], 10) : min;
+  return { min, max };
+}
+
+function parseTemplateWeight(w) {
+  if (!w) return null;
+  const m = String(w).match(/(\d+(?:\.\d+)?)(?:\s*-\s*(\d+(?:\.\d+)?))?/);
+  if (!m) return null;
+  const min = parseFloat(m[1]);
+  const max = m[2] ? parseFloat(m[2]) : min;
+  return { min, max };
+}
+
+function findLastSession(logs, exId, beforeDate) {
+  const dates = Object.keys(logs || {}).filter((d) => !beforeDate || d < beforeDate).sort().reverse();
+  for (const ds of dates) {
+    const entry = logs[ds]?.exercises?.[exId];
+    if (!entry?.sets) continue;
+    const done = entry.sets.filter((s) => s.done && parseNumber(s.weight, 0) > 0 && parseNumber(s.reps, 0) > 0);
+    if (done.length > 0) return { date: ds, sets: done };
+  }
+  return null;
+}
+
+function roundToStep(v, step) {
+  if (!step) return v;
+  return Math.round(v / step) * step;
+}
+
+export function suggestSet({ data, exercise, category, currentDate }) {
+  const range = parseRepRange(exercise.reps);
+  const repsTarget = range.max || range.min || '';
+  const overload = data?.settings?.overloadIncrements?.[category] ?? 1;
+  const step = overload >= 1 ? 0.5 : 0.25;
+
+  const last = findLastSession(data?.logs || {}, exercise.id, currentDate);
+  if (last) {
+    const weights = last.sets.map((s) => parseFloat(s.weight) || 0);
+    const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
+    const hitTop = range.max > 0 && last.sets.every((s) => (parseInt(s.reps, 10) || 0) >= range.max);
+    const next = hitTop ? avg + overload : avg;
+    const w = roundToStep(next, step);
+    return { weight: w > 0 ? w : '', reps: repsTarget };
+  }
+
+  const tw = parseTemplateWeight(exercise.weight);
+  if (tw) {
+    const goal = data?.profile?.goal || 'hypertrophy';
+    const mod = GOAL_WEIGHT_MOD[goal] ?? 1;
+    return { weight: roundToStep(tw.min * mod, step) || '', reps: range.min || repsTarget };
+  }
+
+  return { weight: '', reps: repsTarget };
+}
+

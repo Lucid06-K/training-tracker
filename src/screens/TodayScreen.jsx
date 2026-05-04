@@ -17,6 +17,7 @@ import {
   isBouldering,
   isDragonBoating,
   parseNumber,
+  suggestSet,
   todayStr
 } from '../store/utils.js';
 import { EXERCISE_ALTERNATIVES, RATING_LABELS, WARMUP_ROUTINES } from '../store/defaults.js';
@@ -739,7 +740,10 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
       if (t) {
         const ex = {};
         t.sections.forEach((s) => s.exercises.forEach((e) => {
-          ex[e.id] = { sets: Array.from({ length: e.sets }, () => ({ weight: '', reps: '', done: false })) };
+          const hint = suggestSet({ data: d, exercise: e, category: scheduled.category, currentDate });
+          const w = hint.weight === '' ? '' : String(hint.weight);
+          const r = hint.reps === '' ? '' : String(hint.reps);
+          ex[e.id] = { sets: Array.from({ length: e.sets }, () => ({ weight: w, reps: r, done: false })) };
         }));
         d.logs[currentDate] = { workout: scheduled.category, label: scheduled.label, exercises: ex, notes: '', startTime: Date.now(), completed: false };
       } else {

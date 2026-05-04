@@ -82,7 +82,7 @@ export const DEFAULT_WORKOUTS={
     ]}
   ]}
 };
-export const DEFAULT_PROFILE={height:161,weight:55,proteinMin:88,proteinMax:110,unit:'metric',waterGoal:2.5};
+export const DEFAULT_PROFILE={height:161,weight:55,proteinMin:88,proteinMax:110,unit:'metric',waterGoal:2.5,goal:'hypertrophy'};
 
 export const DEFAULT_SETTINGS={
   restTimerEnabled:true,
@@ -192,6 +192,7 @@ export function mergeWithDefaults(data) {
   if (data.settings.autoTrackRestDays === undefined) data.settings.autoTrackRestDays = true;
   if (!data.settings.overloadIncrements) data.settings.overloadIncrements = { ...DEFAULT_OVERLOAD };
   if (data.profile.waterGoal === undefined) data.profile.waterGoal = 2.5;
+  if (data.profile.goal === undefined) data.profile.goal = 'hypertrophy';
   return data;
 }
 

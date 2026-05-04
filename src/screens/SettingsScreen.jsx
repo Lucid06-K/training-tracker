@@ -404,6 +404,22 @@ export function SettingsScreen({ theme, onTheme }) {
           <NumberField label="Protein Max (g)" value={data.profile?.proteinMax} onChange={(v) => setProfile('proteinMax', v)} />
         </div>
         <NumberField label="Water goal (L)" step={0.5} value={data.profile?.waterGoal} onChange={(v) => setProfile('waterGoal', v)} />
+        <div style={{ marginTop: 10 }}>
+          <div className="tt-label">Training goal</div>
+          <Segmented
+            value={data.profile?.goal || 'hypertrophy'}
+            options={[
+              { value: 'strength', label: 'Strength' },
+              { value: 'hypertrophy', label: 'Hypertrophy' },
+              { value: 'endurance', label: 'Endurance' }
+            ]}
+            onChange={(v) => setProfile('goal', v)}
+            ariaLabel="Training goal"
+          />
+          <div className="tt-muted" style={{ fontSize: 11, marginTop: 6 }}>
+            Used for first-time weight suggestions on new exercises. Past sessions drive everything else.
+          </div>
+        </div>
       </Card>
 
       <Card title="Progressive overload (kg / session)">
