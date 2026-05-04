@@ -32,17 +32,20 @@ let initialized = false;
 export function getFirebase() {
   if (!initialized) {
     try {
+      console.log('[auth] init firebase, origin=', window.location.origin);
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       db = getFirestore(app);
-      getRedirectResult(auth).catch((e) => {
-        if (e && e.code && e.code !== 'auth/no-auth-event') {
-          console.warn('getRedirectResult', e);
-        }
-      });
+      getRedirectResult(auth)
+        .then((res) => {
+          console.log('[auth] getRedirectResult →', res ? `user=${res.user?.email}` : 'no pending redirect');
+        })
+        .catch((e) => {
+          console.warn('[auth] getRedirectResult error', e?.code, e?.message, e);
+        });
       initialized = true;
     } catch (e) {
-      console.warn('Firebase init failed', e);
+      console.warn('[auth] init failed', e);
     }
   }
   return { app, auth, db };
@@ -50,8 +53,15 @@ export function getFirebase() {
 
 export function onAuthChanged(cb) {
   const { auth } = getFirebase();
-  if (!auth) { cb(null); return () => {}; }
-  return onAuthStateChanged(auth, cb);
+  if (!auth) {
+    console.warn('[auth] onAuthChanged: no auth instance, calling cb(null)');
+    cb(null);
+    return () => {};
+  }
+  return onAuthStateChanged(auth, (u) => {
+    console.log('[auth] onAuthStateChanged →', u ? `signed in as ${u.email}` : 'signed out');
+    cb(u);
+  });
 }
 
 function shouldUseRedirect() {
@@ -73,9 +83,11 @@ export async function signInWithGoogle() {
   provider.setCustomParameters({ prompt: 'select_account' });
 
   if (shouldUseRedirect()) {
+    console.log('[auth] using redirect flow');
     await signInWithRedirect(auth, provider);
     return null;
   }
+  console.log('[auth] using popup flow');
 
   try {
     const result = await signInWithPopup(auth, provider);

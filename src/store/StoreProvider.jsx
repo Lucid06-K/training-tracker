@@ -141,6 +141,7 @@ export function StoreProvider({ children }) {
   }, [mergeFromCloud]);
 
   const onSignedIn = useCallback(async (next) => {
+    console.log('[store] onSignedIn', next?.email, next?.uid);
     setUser(next);
     setSyncStatus('syncing');
     await migrateSyncCodeIfAny(next.uid);
