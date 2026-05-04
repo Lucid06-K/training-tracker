@@ -29,6 +29,8 @@ const firebaseConfig = {
 let app, auth, db;
 let initialized = false;
 
+const REDIRECT_FLAG = 'tt-auth-redirect-pending';
+
 export function getFirebase() {
   if (!initialized) {
     try {
@@ -36,13 +38,23 @@ export function getFirebase() {
       app = initializeApp(firebaseConfig);
       auth = getAuth(app);
       db = getFirestore(app);
-      getRedirectResult(auth)
-        .then((res) => {
-          console.log('[auth] getRedirectResult →', res ? `user=${res.user?.email}` : 'no pending redirect');
-        })
-        .catch((e) => {
-          console.warn('[auth] getRedirectResult error', e?.code, e?.message, e);
-        });
+      // Only resolve redirect when we actually kicked one off — cold-load
+      // calls otherwise hit cross-origin iframe storage blocked by Safari
+      // and surface as auth/internal-error.
+      const pending = sessionStorage.getItem(REDIRECT_FLAG);
+      if (pending) {
+        sessionStorage.removeItem(REDIRECT_FLAG);
+        console.log('[auth] resolving pending redirect…');
+        getRedirectResult(auth)
+          .then((res) => {
+            console.log('[auth] getRedirectResult →', res ? `user=${res.user?.email}` : 'null');
+          })
+          .catch((e) => {
+            console.warn('[auth] getRedirectResult error', e?.code, e?.message, e);
+          });
+      } else {
+        console.log('[auth] no pending redirect, skip getRedirectResult');
+      }
       initialized = true;
     } catch (e) {
       console.warn('[auth] init failed', e);
@@ -84,6 +96,7 @@ export async function signInWithGoogle() {
 
   if (shouldUseRedirect()) {
     console.log('[auth] using redirect flow');
+    sessionStorage.setItem(REDIRECT_FLAG, '1');
     await signInWithRedirect(auth, provider);
     return null;
   }
@@ -91,8 +104,10 @@ export async function signInWithGoogle() {
 
   try {
     const result = await signInWithPopup(auth, provider);
+    console.log('[auth] popup success', result.user?.email);
     return result.user;
   } catch (e) {
+    console.warn('[auth] popup error', e?.code, e?.message);
     const code = e?.code || '';
     const fallbackToRedirect =
       code === 'auth/popup-blocked' ||
@@ -100,6 +115,8 @@ export async function signInWithGoogle() {
       code === 'auth/web-storage-unsupported' ||
       code === 'auth/internal-error';
     if (fallbackToRedirect) {
+      console.log('[auth] falling back to redirect');
+      sessionStorage.setItem(REDIRECT_FLAG, '1');
       await signInWithRedirect(auth, provider);
       return null;
     }
