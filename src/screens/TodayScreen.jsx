@@ -688,6 +688,37 @@ function RatingModal({ open, onClose, onRate }) {
   );
 }
 
+function SwitchActivityModal({ open, onClose, data, currentCategory, onPick }) {
+  if (!open) return null;
+  const templates = { ...(data.workouts || {}), ...(data.customWorkouts || {}) };
+  const options = Object.entries(templates)
+    .filter(([key]) => key !== currentCategory)
+    .map(([key, t]) => ({ key, name: t.name || data.categories?.[key]?.name || key, sections: t.sections?.length || 0 }));
+  return (
+    <Modal open centered onClose={onClose} title="Switch today's workout">
+      <p className="tt-muted" style={{ fontSize: 12, marginBottom: 12 }}>
+        Pick a different workout for today. Doesn't change your weekly schedule.
+      </p>
+      {options.length === 0 ? (
+        <div className="tt-muted" style={{ fontSize: 13, padding: 8 }}>No other templates available.</div>
+      ) : (
+        options.map((opt) => (
+          <button
+            key={opt.key}
+            type="button"
+            className="tt-card-opaque"
+            onClick={() => { onPick(opt.key); onClose(); }}
+            style={{ width: '100%', textAlign: 'left', cursor: 'pointer', marginBottom: 8, border: '1px solid var(--border)' }}
+          >
+            <div style={{ fontWeight: 600 }}>{opt.name}</div>
+            <div className="tt-muted" style={{ fontSize: 11 }}>{opt.sections} section{opt.sections === 1 ? '' : 's'}</div>
+          </button>
+        ))
+      )}
+    </Modal>
+  );
+}
+
 function findExerciseName(data, exId) {
   for (const w of Object.values(data.workouts || {})) {
     for (const s of w.sections || []) {
@@ -733,25 +764,32 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
   // meaning the schedule points at a template that no longer exists.
   const templateMissing = !!scheduled && !template && !isActivityCategory && !isRest;
 
-  const startWorkout = () => {
-    if (!scheduled || templateMissing) return;
+  const startWorkout = (overrideCategory) => {
+    if (!scheduled && !overrideCategory) return;
+    if (!overrideCategory && templateMissing) return;
     update((d) => {
-      const t = d.workouts[scheduled.category] || d.customWorkouts[scheduled.category];
+      const cat = overrideCategory || scheduled.category;
+      const t = d.workouts[cat] || d.customWorkouts[cat];
+      const catMeta = d.categories?.[cat];
+      const label = overrideCategory
+        ? (t?.name || catMeta?.name || cat)
+        : scheduled.label;
       if (t) {
         const ex = {};
         t.sections.forEach((s) => s.exercises.forEach((e) => {
-          const hint = suggestSet({ data: d, exercise: e, category: scheduled.category, currentDate });
+          const hint = suggestSet({ data: d, exercise: e, category: cat, currentDate });
           const w = hint.weight === '' ? '' : String(hint.weight);
           const r = hint.reps === '' ? '' : String(hint.reps);
           ex[e.id] = { sets: Array.from({ length: e.sets }, () => ({ weight: w, reps: r, done: false })) };
         }));
-        d.logs[currentDate] = { workout: scheduled.category, label: scheduled.label, exercises: ex, notes: '', startTime: Date.now(), completed: false };
+        d.logs[currentDate] = { workout: cat, label, exercises: ex, notes: '', startTime: Date.now(), completed: false, switched: !!overrideCategory };
       } else {
-        d.logs[currentDate] = { workout: 'sport', label: scheduled.label, exercises: {}, notes: '', duration: 0, distance: 0, isDrumming: false, completed: false, startTime: Date.now() };
+        d.logs[currentDate] = { workout: 'sport', label, exercises: {}, notes: '', duration: 0, distance: 0, isDrumming: false, completed: false, startTime: Date.now() };
       }
       return d;
     });
   };
+  const [switchOpen, setSwitchOpen] = useState(false);
 
   const completeLog = (rating) => {
     update((d) => {
@@ -815,7 +853,7 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
             <WarmupCard currentDate={currentDate} log={log} scheduled={scheduled} update={update} />
           )}
           {template && !log && (
-            <button className="tt-btn tt-btn-primary tt-btn-block" onClick={startWorkout}>
+            <button className="tt-btn tt-btn-primary tt-btn-block" onClick={() => startWorkout()}>
               Start Workout
             </button>
           )}
@@ -825,8 +863,17 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
             </Banner>
           )}
           {!template && !templateMissing && !log && (
-            <button className="tt-btn tt-btn-primary tt-btn-block" onClick={startWorkout}>
+            <button className="tt-btn tt-btn-primary tt-btn-block" onClick={() => startWorkout()}>
               Log Activity
+            </button>
+          )}
+          {!log && (
+            <button
+              className="tt-btn tt-btn-ghost tt-btn-block"
+              style={{ marginTop: 8 }}
+              onClick={() => setSwitchOpen(true)}
+            >
+              Not feeling it? Do a different workout
             </button>
           )}
           {log && template && (
@@ -870,6 +917,13 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
       {confetti && <Confetti count={52} />}
       {pr && <PRToast {...pr} onDone={() => setPR(null)} />}
       <RatingModal open={ratingOpen} onClose={() => setRatingOpen(false)} onRate={completeLog} />
+      <SwitchActivityModal
+        open={switchOpen}
+        onClose={() => setSwitchOpen(false)}
+        data={data}
+        currentCategory={scheduled?.category}
+        onPick={(cat) => startWorkout(cat)}
+      />
     </Page>
   );
 }
