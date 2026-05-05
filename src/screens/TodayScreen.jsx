@@ -757,12 +757,14 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
   const log = data.logs?.[currentDate] || null;
   const isRest = scheduled?.category === 'rest';
 
-  const template = scheduled ? data.workouts?.[scheduled.category] || data.customWorkouts?.[scheduled.category] : null;
-  const scheduledCat = scheduled ? data.categories?.[scheduled.category] : null;
-  const isActivityCategory = scheduledCat?.color === 'sport';
-  // Template is missing but the category is strength-like (upper/lower/etc.),
-  // meaning the schedule points at a template that no longer exists.
-  const templateMissing = !!scheduled && !template && !isActivityCategory && !isRest;
+  // If today's log was switched to a different workout, the active category
+  // comes from the log itself, not the weekly schedule.
+  const activeCategory = log?.workout || scheduled?.category;
+  const template = activeCategory ? data.workouts?.[activeCategory] || data.customWorkouts?.[activeCategory] : null;
+  const activeCat = activeCategory ? data.categories?.[activeCategory] : null;
+  const isActivityCategory = activeCat?.color === 'sport';
+  const templateMissing = !!scheduled && !log && !template && !isActivityCategory && !isRest;
+  const headerLabel = log?.label || scheduled?.label;
 
   const startWorkout = (overrideCategory) => {
     if (!scheduled && !overrideCategory) return;
@@ -846,8 +848,8 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
         </Card>
       ) : (
         <Card
-          title={scheduled.label}
-          trailing={catTag(data.categories?.[scheduled.category])}
+          title={headerLabel}
+          trailing={catTag(activeCat)}
         >
           {log && !log.completed && (
             <WarmupCard currentDate={currentDate} log={log} scheduled={scheduled} update={update} />
