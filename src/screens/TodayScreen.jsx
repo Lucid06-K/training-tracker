@@ -852,7 +852,12 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
           trailing={catTag(activeCat)}
         >
           {log && !log.completed && (
-            <WarmupCard currentDate={currentDate} log={log} scheduled={scheduled} update={update} />
+            <WarmupCard
+              currentDate={currentDate}
+              log={log}
+              scheduled={{ label: log.label, category: log.workout }}
+              update={update}
+            />
           )}
           {template && !log && (
             <button className="tt-btn tt-btn-primary tt-btn-block" onClick={() => startWorkout()}>
