@@ -174,9 +174,7 @@ function QuickBodyweight({ currentDate, data, update }) {
   );
 }
 
-function RestTimer({ enabled, sound }) {
-  const [seconds, setSeconds] = useState(0);
-  const [running, setRunning] = useState(false);
+function RestTimer({ enabled, sound, seconds, running, setSeconds, setRunning }) {
   const intervalRef = useRef(null);
 
   useEffect(() => {
@@ -209,28 +207,31 @@ function RestTimer({ enabled, sound }) {
       });
     }, 1000);
     return () => clearInterval(intervalRef.current);
-  }, [running, sound]);
+  }, [running, sound, setRunning, setSeconds]);
 
   if (!enabled) return null;
+  // Auto-pop only while a countdown is active. Hidden when idle —
+  // sets trigger it via toggleSet, and it dismisses itself at 0.
+  if (!running) return null;
 
-  const start = (s) => { setSeconds(s); setRunning(true); };
   const stop = () => { setRunning(false); setSeconds(0); };
+  const add = (delta) => setSeconds((s) => Math.max(0, s + delta));
 
   const mm = String(Math.floor(seconds / 60)).padStart(2, '0');
   const ss = String(seconds % 60).padStart(2, '0');
 
   return (
-    <Card title="Rest Timer" className="tt-timer-card">
-      <div className={`tt-timer-v ${running ? 'running' : ''}`}>{mm}:{ss}</div>
-      <div className="tt-timer-presets">
-        <button onClick={() => start(30)}>30s</button>
-        <button onClick={() => start(60)}>1m</button>
-        <button onClick={() => start(90)}>1m 30s</button>
-        <button onClick={() => start(120)}>2m</button>
-        <button onClick={() => start(180)}>3m</button>
-        {running && <button className="stop" onClick={stop}>Stop</button>}
+    <div className="tt-rest-pop">
+      <div className="tt-rest-pop-inner">
+        <div className="tt-rest-pop-label">Rest</div>
+        <div className={`tt-timer-v running`} style={{ padding: '4px 0' }}>{mm}:{ss}</div>
+        <div className="tt-timer-presets">
+          <button onClick={() => add(-15)}>−15s</button>
+          <button onClick={() => add(15)}>+15s</button>
+          <button className="stop" onClick={stop}>Skip</button>
+        </div>
       </div>
-    </Card>
+    </div>
   );
 }
 
@@ -393,9 +394,10 @@ function SwapModal({ exercise, currentDate, onClose, update }) {
   );
 }
 
-function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
+function WorkoutLog({ log, template, currentDate, data, update, onPR, startRest }) {
   const showStretch = !!data.settings?.showStretchSection;
   const [swapTarget, setSwapTarget] = useState(null);
+  const restEnabled = !!data.settings?.restTimerEnabled;
 
   const updateSet = (exId, si, field, val) => {
     update((d) => {
@@ -408,6 +410,8 @@ function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
   };
 
   const toggleSet = (exId, si) => {
+    let justCompleted = false;
+    let restSeconds = 0;
     update((d) => {
       const entry = d.logs[currentDate]?.exercises?.[exId];
       if (!entry) return d;
@@ -415,12 +419,15 @@ function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
       s.done = !s.done;
       if (s.done) {
         haptic(30);
+        justCompleted = true;
+        const ex = findExerciseById(d, exId);
+        restSeconds = parseNumber(ex?.rest, 0);
         const weight = parseNumber(s.weight, 0);
         const reps = parseNumber(s.reps, 0);
         if (weight > 0 && reps > 0) {
           const prev = d.prs[exId];
           if (!prev || weight > prev.weight || (weight === prev.weight && reps > prev.reps)) {
-            const exName = findExerciseName(d, exId);
+            const exName = ex?.name || 'Exercise';
             d.prs[exId] = { weight, reps, date: currentDate };
             onPR && onPR({ exercise: exName, weight, reps, prevWeight: prev?.weight || 0 });
           }
@@ -428,6 +435,9 @@ function WorkoutLog({ log, template, currentDate, data, update, onPR }) {
       }
       return d;
     });
+    if (justCompleted && restEnabled && restSeconds > 0 && startRest) {
+      startRest(restSeconds);
+    }
   };
 
   const sections = template.sections.filter((s) => showStretch || !/stretch/i.test(s.name));
@@ -476,7 +486,7 @@ function Elapsed({ start }) {
   return <span className="num" style={{ fontVariantNumeric: 'tabular-nums' }}>{text}</span>;
 }
 
-function DragonBoatLog({ log, currentDate, data, update }) {
+function DragonBoatLog({ log, currentDate, data, update, startRest }) {
   const drumming = !!log.isDrumming;
   const dur = log.duration || 0;
   const dist = log.distance || 0;
@@ -501,7 +511,7 @@ function DragonBoatLog({ log, currentDate, data, update }) {
         </button>
       </div>
       {drumming ? (
-        data.workouts.drum ? <WorkoutLog log={log} template={data.workouts.drum} currentDate={currentDate} data={data} update={update} /> : null
+        data.workouts.drum ? <WorkoutLog log={log} template={data.workouts.drum} currentDate={currentDate} data={data} update={update} startRest={startRest} /> : null
       ) : (
         <>
           <div style={{ marginBottom: 12 }}>
@@ -719,20 +729,20 @@ function SwitchActivityModal({ open, onClose, data, currentCategory, onPick }) {
   );
 }
 
-function findExerciseName(data, exId) {
+function findExerciseById(data, exId) {
   for (const w of Object.values(data.workouts || {})) {
     for (const s of w.sections || []) {
       const ex = s.exercises.find((e) => e.id === exId);
-      if (ex) return ex.name;
+      if (ex) return ex;
     }
   }
   for (const w of Object.values(data.customWorkouts || {})) {
     for (const s of w.sections || []) {
       const ex = s.exercises.find((e) => e.id === exId);
-      if (ex) return ex.name;
+      if (ex) return ex;
     }
   }
-  return 'Exercise';
+  return null;
 }
 
 export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setCurrentDateProp } = {}) {
@@ -792,6 +802,13 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
     });
   };
   const [switchOpen, setSwitchOpen] = useState(false);
+  const [restSeconds, setRestSeconds] = useState(0);
+  const [restRunning, setRestRunning] = useState(false);
+  const startRest = (s) => {
+    if (!s || s <= 0) return;
+    setRestSeconds(s);
+    setRestRunning(true);
+  };
 
   const completeLog = (rating) => {
     update((d) => {
@@ -891,10 +908,11 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
               data={data}
               update={update}
               onPR={triggerPR}
+              startRest={startRest}
             />
           )}
           {log && !template && isDragonBoating(log.label) && (
-            <DragonBoatLog log={log} currentDate={currentDate} data={data} update={update} />
+            <DragonBoatLog log={log} currentDate={currentDate} data={data} update={update} startRest={startRest} />
           )}
           {log && !template && isBouldering(log.label) && (
             <BoulderingLog log={log} currentDate={currentDate} update={update} />
@@ -919,7 +937,14 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
         </Card>
       )}
 
-      <RestTimer enabled={!!data.settings?.restTimerEnabled} sound={!!data.settings?.restTimerSound} />
+      <RestTimer
+        enabled={!!data.settings?.restTimerEnabled}
+        sound={!!data.settings?.restTimerSound}
+        seconds={restSeconds}
+        running={restRunning}
+        setSeconds={setRestSeconds}
+        setRunning={setRestRunning}
+      />
 
       {confetti && <Confetti count={52} />}
       {pr && <PRToast {...pr} onDone={() => setPR(null)} />}

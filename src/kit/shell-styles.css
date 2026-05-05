@@ -208,6 +208,10 @@ select.tt-input{appearance:none;-webkit-appearance:none}
 .tt-timer-presets{display:flex;gap:5px;justify-content:center;flex-wrap:wrap}
 .tt-timer-presets button{font-family:inherit;font-size:11px;font-weight:600;padding:6px 10px;border-radius:9px;border:1px solid var(--border-2);background:var(--bg-2);color:var(--fg-1);cursor:pointer}
 .tt-timer-presets button.stop{background:var(--danger);color:#fff;border-color:transparent}
+.tt-rest-pop{position:fixed;left:0;right:0;bottom:calc(env(safe-area-inset-bottom,0) + 84px);display:flex;justify-content:center;pointer-events:none;z-index:60;animation:tt-rest-in .22s ease-out}
+.tt-rest-pop-inner{pointer-events:auto;background:var(--bg-1);border:1px solid var(--border);border-radius:18px;box-shadow:0 12px 32px rgba(0,0,0,.18);padding:10px 16px;min-width:200px;text-align:center}
+.tt-rest-pop-label{font-size:10px;text-transform:uppercase;letter-spacing:.08em;color:var(--fg-3);font-weight:700}
+@keyframes tt-rest-in{from{opacity:0;transform:translateY(8px)}to{opacity:1;transform:translateY(0)}}
 
 /* ---- progress bar ---- */
 .tt-bar{height:6px;border-radius:999px;background:rgba(84,48,32,.08);overflow:hidden;position:relative}
