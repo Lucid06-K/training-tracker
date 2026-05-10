@@ -3,6 +3,70 @@ import { Page, Card, Modal, Segmented } from '../kit/AppShell.jsx';
 import { Icons } from '../kit/Icons.jsx';
 import { useStore } from '../store/StoreProvider.jsx';
 import { DAYS, deepClone, parseNumber, todayStr, uid, validateVideoUrl } from '../store/utils.js';
+import { SPLIT_CATEGORIES, SPLIT_PRESETS, SPLIT_TEMPLATES } from '../store/defaults.js';
+
+function SplitChooserCard({ data, update }) {
+  const [confirming, setConfirming] = useState(null);
+  const apply = (preset) => {
+    update((d) => {
+      // Seed any missing categories + workout templates the preset needs.
+      d.categories = d.categories || {};
+      d.workouts = d.workouts || {};
+      preset.needs.forEach((key) => {
+        if (!d.categories[key] && SPLIT_CATEGORIES[key]) {
+          d.categories[key] = { ...SPLIT_CATEGORIES[key] };
+        }
+        const hasTemplate = !!d.workouts[key] || !!d.customWorkouts?.[key];
+        if (!hasTemplate && SPLIT_TEMPLATES[key]) {
+          d.workouts[key] = JSON.parse(JSON.stringify(SPLIT_TEMPLATES[key]));
+        }
+      });
+      d.schedule = JSON.parse(JSON.stringify(preset.schedule));
+      return d;
+    });
+    setConfirming(null);
+  };
+  return (
+    <Card title="Choose a split">
+      <p className="tt-muted" style={{ fontSize: 12, marginBottom: 10 }}>
+        Picks from the muscle-growth research. Applying replaces your weekly schedule and seeds any new templates you'll need. The split you stick to wins.
+      </p>
+      {SPLIT_PRESETS.map((p) => (
+        <div key={p.id} className="tt-card-opaque" style={{ marginBottom: 10, border: '1px solid var(--border)' }}>
+          <div style={{ display: 'flex', alignItems: 'center', gap: 10 }}>
+            <div style={{ flex: 1 }}>
+              <div style={{ fontWeight: 600 }}>{p.name}</div>
+              <div className="tt-muted" style={{ fontSize: 11 }}>{p.summary}</div>
+            </div>
+            <button
+              type="button"
+              className="tt-btn tt-btn-primary tt-btn-sm"
+              onClick={() => setConfirming(p)}
+            >Apply</button>
+          </div>
+        </div>
+      ))}
+      <Modal open={!!confirming} onClose={() => setConfirming(null)} centered title="Replace weekly schedule?">
+        {confirming && (
+          <>
+            <p style={{ fontSize: 13, marginBottom: 10 }}>
+              This will overwrite your current 7-day schedule with the <strong>{confirming.name}</strong> layout.
+            </p>
+            {confirming.needs.length > 0 && (
+              <p className="tt-muted" style={{ fontSize: 12, marginBottom: 14 }}>
+                Adds starter templates for: {confirming.needs.join(', ')}. Your existing custom templates stay intact.
+              </p>
+            )}
+            <div className="tt-btn-row">
+              <button className="tt-btn tt-btn-primary" onClick={() => apply(confirming)}>Apply split</button>
+              <button className="tt-btn tt-btn-ghost" onClick={() => setConfirming(null)}>Cancel</button>
+            </div>
+          </>
+        )}
+      </Modal>
+    </Card>
+  );
+}
 
 function NumberField({ label, value, onChange, step = 1, unit }) {
   return (
@@ -430,6 +494,8 @@ export function SettingsScreen({ theme, onTheme }) {
           <NumberField label="Drum" step={0.25} value={data.settings?.overloadIncrements?.drum} onChange={(v) => setOverload('drum', v)} unit="kg" />
         </div>
       </Card>
+
+      <SplitChooserCard data={data} update={update} />
 
       <Card title="Weekly schedule">
         {DAYS.map((dayName, i) => {

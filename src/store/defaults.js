@@ -175,6 +175,131 @@ export const EXERCISE_ALTERNATIVES={
 };
 
 
+// ---- Training splits (from the muscle-growth video) ----
+//
+// Each preset replaces data.schedule (7 entries, Sun=0..Sat=6) and lazily
+// adds any categories/templates it needs that aren't already in the user's
+// data. Existing 'upper' and 'lower' are reused; new 'push', 'pull', 'full'
+// templates ship below. 'sport' days fall back to whatever activity label
+// the user prefers — the chooser preserves them when present.
+
+export const SPLIT_TEMPLATES = {
+  push: { name: 'Push (Chest / Shoulders / Triceps)', sections: [
+    { name: 'Main Exercises', exercises: [
+      { id: 'ub1', name: 'Pec Fly Machine', equipment: 'Pec fly machine', weight: '15-20 kg', sets: 4, reps: '8-12', rest: 75, video: 'https://www.youtube.com/watch?v=Z57CtFmRMxA' },
+      { id: 'pu_bench', name: 'Converging Machine Chest Press', equipment: 'Chest press machine', weight: '20-30 kg', sets: 4, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=NWIkTJo27cI' },
+      { id: 'ub3', name: 'Overhead Press', equipment: 'Bar weight', weight: '5-8 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=qEwKCR5JCog' },
+      { id: 'pu_lat', name: 'Cross-Body Cable Lateral Raise', equipment: 'Cable machine', weight: '3-6 kg', sets: 3, reps: '12-15', rest: 60, video: 'https://www.youtube.com/watch?v=PzsBbXgFZBo' },
+      { id: 'pu_skull', name: 'Dumbbell Skull Crushers', equipment: 'Dumbbells', weight: '5-8 kg', sets: 3, reps: '10-12', rest: 60, video: 'https://www.youtube.com/watch?v=d_KZxkY_0cM' },
+      { id: 'en4', name: 'Tricep Pushdowns', equipment: 'Cable machine', weight: '8-12 kg', sets: 3, reps: '12-15', rest: 60, video: 'https://www.youtube.com/watch?v=2-LAMcpzODU' }
+    ]}
+  ]},
+  pull: { name: 'Pull (Back / Biceps / Rear Delts)', sections: [
+    { name: 'Main Exercises', exercises: [
+      { id: 'ub4', name: 'Lat Pulldown', equipment: 'Lat pulldown', weight: '20-25 kg', sets: 4, reps: '8-12', rest: 75, video: 'https://www.youtube.com/watch?v=CAwf7n6Luuc' },
+      { id: 'ub2', name: 'Barbell Rows', equipment: 'Bar weight', weight: '8-12 kg', sets: 4, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=roCP6wCXPqo' },
+      { id: 'pl_row', name: 'Machine Row (Pronated)', equipment: 'Row machine', weight: '15-25 kg', sets: 3, reps: '10-12', rest: 75, video: 'https://www.youtube.com/watch?v=GZbfZ033f74' },
+      { id: 'ub5', name: 'Rear Delt Fly Machine', equipment: 'Rear delt machine', weight: '10-15 kg', sets: 3, reps: '12-15', rest: 60, video: 'https://www.youtube.com/watch?v=5YK4bgzXDp0' },
+      { id: 'pl_bayesian', name: 'Bayesian Cable Curl', equipment: 'Cable machine', weight: '5-8 kg', sets: 3, reps: '10-12', rest: 60, video: 'https://www.youtube.com/watch?v=85_MhvEW4VE' },
+      { id: 'en3', name: 'Hammer Curls', equipment: 'Bar weights', weight: '5-8 kg', sets: 3, reps: '10-12', rest: 60, video: 'https://www.youtube.com/watch?v=zC3nLlEvin4' }
+    ]}
+  ]},
+  legs: { name: 'Legs (Quads / Hams / Glutes / Calves)', sections: [
+    { name: 'Main Exercises', exercises: [
+      { id: 'lg_hack', name: 'Hack Squat', equipment: 'Hack squat machine', weight: '40-60 kg', sets: 4, reps: '8-10', rest: 120, video: 'https://www.youtube.com/watch?v=EdtaJRBqwes' },
+      { id: 'lb2', name: 'Romanian Deadlifts', equipment: 'Bar weight', weight: '8-12 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=jEy_czb3RKA' },
+      { id: 'lg_thrust', name: 'Machine Hip Thrust', equipment: 'Hip thrust machine', weight: '30-50 kg', sets: 3, reps: '10-12', rest: 90, video: 'https://www.youtube.com/watch?v=R2nyDX276nE' },
+      { id: 'lb5', name: 'Leg Extension', equipment: 'Leg extension', weight: '15-20 kg', sets: 3, reps: '12-15', rest: 60, video: 'https://www.youtube.com/watch?v=YyvSfVjQeL0' },
+      { id: 'lb4', name: 'Leg Curl', equipment: 'Leg curl machine', weight: '15-20 kg', sets: 3, reps: '12-15', rest: 60, video: 'https://www.youtube.com/watch?v=1Tq3QdYUuHs' },
+      { id: 'lg_calf', name: 'Straight-Leg Calf Raise', equipment: 'Calf raise / Smith', weight: '20-40 kg', sets: 4, reps: '10-15', rest: 45, video: 'https://www.youtube.com/watch?v=gwLzBJYoWlI' }
+    ]}
+  ]},
+  full: { name: 'Full Body', sections: [
+    { name: 'Main Exercises', exercises: [
+      { id: 'lb1', name: 'Leg Press', equipment: 'Leg press machine', weight: '40-60 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=IZxyjW7MPJQ' },
+      { id: 'pu_bench', name: 'Chest Press', equipment: 'Chest press machine', weight: '20-30 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=NWIkTJo27cI' },
+      { id: 'ub2', name: 'Barbell Rows', equipment: 'Bar weight', weight: '8-12 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=roCP6wCXPqo' },
+      { id: 'lb2', name: 'Romanian Deadlifts', equipment: 'Bar weight', weight: '8-12 kg', sets: 3, reps: '8-10', rest: 90, video: 'https://www.youtube.com/watch?v=jEy_czb3RKA' },
+      { id: 'ub3', name: 'Overhead Press', equipment: 'Bar weight', weight: '5-8 kg', sets: 2, reps: '8-10', rest: 75, video: 'https://www.youtube.com/watch?v=qEwKCR5JCog' },
+      { id: 'ub4', name: 'Lat Pulldown', equipment: 'Lat pulldown', weight: '20-25 kg', sets: 2, reps: '10-12', rest: 60, video: 'https://www.youtube.com/watch?v=CAwf7n6Luuc' }
+    ]}
+  ]}
+};
+
+export const SPLIT_CATEGORIES = {
+  push: { name: 'Push Day', color: 'upper' },
+  pull: { name: 'Pull Day', color: 'upper' },
+  legs: { name: 'Leg Day', color: 'lower' },
+  full: { name: 'Full Body', color: 'custom' }
+};
+
+export const SPLIT_PRESETS = [
+  {
+    id: 'fullbody3',
+    name: 'Full Body · 3 days/wk',
+    summary: 'Mon / Wed / Fri full-body. Best for beginners and busy weeks. ~6 compound moves per session.',
+    days: 3,
+    needs: ['full'],
+    schedule: {
+      0: { category: 'rest',  label: 'Rest' },
+      1: { category: 'full',  label: 'Full Body A' },
+      2: { category: 'rest',  label: 'Rest' },
+      3: { category: 'full',  label: 'Full Body B' },
+      4: { category: 'rest',  label: 'Rest' },
+      5: { category: 'full',  label: 'Full Body C' },
+      6: { category: 'rest',  label: 'Rest' }
+    }
+  },
+  {
+    id: 'upperlower4',
+    name: 'Upper / Lower · 4 days/wk',
+    summary: 'Two upper days, two lower days. Each muscle hit 2× — the frequency sweet spot.',
+    days: 4,
+    needs: [],
+    schedule: {
+      0: { category: 'rest',  label: 'Rest' },
+      1: { category: 'upper', label: 'Upper Body' },
+      2: { category: 'lower', label: 'Lower Body' },
+      3: { category: 'rest',  label: 'Rest' },
+      4: { category: 'upper', label: 'Upper Body' },
+      5: { category: 'lower', label: 'Lower Body' },
+      6: { category: 'rest',  label: 'Rest' }
+    }
+  },
+  {
+    id: 'ppl6',
+    name: 'Push / Pull / Legs · 6 days/wk',
+    summary: 'Each muscle hit 2× a week. High volume, only one rest day. For experienced lifters.',
+    days: 6,
+    needs: ['push', 'pull', 'legs'],
+    schedule: {
+      0: { category: 'rest',  label: 'Rest' },
+      1: { category: 'push',  label: 'Push' },
+      2: { category: 'pull',  label: 'Pull' },
+      3: { category: 'legs',  label: 'Legs' },
+      4: { category: 'push',  label: 'Push' },
+      5: { category: 'pull',  label: 'Pull' },
+      6: { category: 'legs',  label: 'Legs' }
+    }
+  },
+  {
+    id: 'ulppl5',
+    name: 'Upper / Lower / PPL · 5 days/wk',
+    summary: "Jeff's favorite. Combines U/L base with a PPL second hit. Each muscle 2×, two rest days.",
+    days: 5,
+    needs: ['push', 'pull', 'legs'],
+    schedule: {
+      0: { category: 'rest',  label: 'Rest' },
+      1: { category: 'upper', label: 'Upper Body' },
+      2: { category: 'lower', label: 'Lower Body' },
+      3: { category: 'rest',  label: 'Rest' },
+      4: { category: 'push',  label: 'Push' },
+      5: { category: 'pull',  label: 'Pull' },
+      6: { category: 'legs',  label: 'Legs' }
+    }
+  }
+];
+
 export const STORAGE_KEY = 'training_tracker_v2';
 export const SYNC_CODE_KEY = 'training_sync_code';
 
