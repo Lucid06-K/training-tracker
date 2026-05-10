@@ -101,8 +101,18 @@ export function NutritionScreen() {
   const [measModalOpen, setMeasModalOpen] = useState(false);
 
   const nutri = data.nutrition?.[currentDate] || { meals: [], waterL: 0 };
-  const proteinMax = data.profile?.proteinMax || 110;
-  const proteinMin = data.profile?.proteinMin || 88;
+  // Bodyweight-derived target: 1.6 g/kg = ceiling for muscle benefit (Helms);
+  // 1.2 g/kg = floor where you still progress. Falls back to legacy profile
+  // values if the user hasn't logged any weight yet.
+  const latestWeight = useMemo(() => {
+    const bw = data.bodyweight || {};
+    const dates = Object.keys(bw).sort();
+    return parseNumber(bw[dates[dates.length - 1]], 0) || parseNumber(data.profile?.weight, 0);
+  }, [data.bodyweight, data.profile?.weight]);
+  const derivedMax = latestWeight ? Math.round(latestWeight * 1.6) : 0;
+  const derivedMin = latestWeight ? Math.round(latestWeight * 1.2) : 0;
+  const proteinMax = derivedMax || data.profile?.proteinMax || 110;
+  const proteinMin = derivedMin || data.profile?.proteinMin || 88;
   const waterGoal = data.profile?.waterGoal || 2.5;
   const totalProtein = useMemo(() => nutri.meals.reduce((s, m) => s + (m.protein || 0), 0), [nutri.meals]);
   const proteinPct = Math.min(1, totalProtein / proteinMax);

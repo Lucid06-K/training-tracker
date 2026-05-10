@@ -219,7 +219,14 @@ export function suggestSet({ data, exercise, category, currentDate }) {
     const weights = last.sets.map((s) => parseFloat(s.weight) || 0);
     const avg = weights.reduce((a, b) => a + b, 0) / weights.length;
     const hitTop = range.max > 0 && last.sets.every((s) => (parseInt(s.reps, 10) || 0) >= range.max);
-    const next = hitTop ? avg + overload : avg;
+    // RIR (reps-in-reserve) gates progression: only bump when last session was
+    // actually close to failure. Far-from-failure sets should hold the weight.
+    const rirs = last.sets.map((s) => parseFloat(s.rir)).filter((n) => Number.isFinite(n));
+    const avgRir = rirs.length ? rirs.reduce((a, b) => a + b, 0) / rirs.length : null;
+    const closeToFailure = avgRir !== null && avgRir <= 1;
+    const tooEasy = avgRir !== null && avgRir >= 4;
+    let next = avg;
+    if ((hitTop || closeToFailure) && !tooEasy) next = avg + overload;
     const w = roundToStep(next, step);
     return { weight: w > 0 ? w : '', reps: repsTarget };
   }

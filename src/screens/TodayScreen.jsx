@@ -20,11 +20,12 @@ import {
   suggestSet,
   todayStr
 } from '../store/utils.js';
-import { EXERCISE_ALTERNATIVES, RATING_LABELS, WARMUP_ROUTINES } from '../store/defaults.js';
+import { COACH_TIPS, EXERCISE_ALTERNATIVES, RATING_LABELS, WARMUP_ROUTINES } from '../store/defaults.js';
 
 const BOULDER_GRADES = ['V0', 'V1', 'V2', 'V3', 'V4', 'V5', 'V6', 'V7', 'V8', 'V9', 'V10+'];
 
 const RECAP_KEY = 'training_recap_dismissed_week';
+const COACH_TIP_KEY = 'training_coach_tip_dismissed_date';
 
 function getLastWeekRecap(data) {
   const wk = getWeekDates(-1);
@@ -64,6 +65,86 @@ function getLastWeekRecap(data) {
     bSends,
     highGrade: highGrade >= 0 ? BOULDER_GRADES[highGrade] : '—'
   };
+}
+
+function CoachTipCard({ currentDate, dismissedKey, onDismiss }) {
+  // Stable per-date selection — same tip all day, rotates with the date.
+  const idx = useMemo(() => {
+    const seed = currentDate.split('-').reduce((s, n) => s * 31 + parseInt(n, 10), 7);
+    return Math.abs(seed) % COACH_TIPS.length;
+  }, [currentDate]);
+  if (dismissedKey === currentDate) return null;
+  const tip = COACH_TIPS[idx];
+  return (
+    <Card
+      title={`Coach tip · ${tip.t}`}
+      trailing={
+        <button type="button" className="tt-btn tt-btn-ghost tt-btn-sm" onClick={onDismiss} aria-label="Dismiss tip">
+          {Icons.close}
+        </button>
+      }
+    >
+      <div style={{ fontSize: 13, lineHeight: 1.45, color: 'var(--fg-2)' }}>{tip.d}</div>
+    </Card>
+  );
+}
+
+function SleepLogCard({ currentDate, data, update }) {
+  const [v, setV] = useState(() => data.sleep?.[currentDate]?.hours ?? '');
+  useEffect(() => { setV(data.sleep?.[currentDate]?.hours ?? ''); }, [currentDate, data.sleep]);
+  const save = () => {
+    const n = parseNumber(v, null);
+    update((d) => {
+      d.sleep = d.sleep || {};
+      if (n == null || v === '' || n <= 0) delete d.sleep[currentDate];
+      else d.sleep[currentDate] = { ...(d.sleep[currentDate] || {}), hours: Math.min(24, n) };
+      return d;
+    });
+  };
+  const setQuality = (q) => {
+    update((d) => {
+      d.sleep = d.sleep || {};
+      d.sleep[currentDate] = { ...(d.sleep[currentDate] || {}), quality: q };
+      return d;
+    });
+  };
+  const quality = data.sleep?.[currentDate]?.quality;
+  const lowSleep = parseNumber(v, 0) > 0 && parseNumber(v, 0) < 7;
+  return (
+    <Card title="Sleep">
+      <div style={{ display: 'flex', gap: 10, alignItems: 'center' }}>
+        <input
+          type="number"
+          step="0.5"
+          inputMode="decimal"
+          className="tt-input"
+          placeholder="hours"
+          value={v}
+          onChange={(e) => setV(e.target.value)}
+          onBlur={save}
+          style={{ flex: 1 }}
+        />
+        <span className="tt-muted" style={{ fontSize: 12 }}>hrs</span>
+      </div>
+      <div className="tt-btn-row" style={{ marginTop: 8 }}>
+        {['Poor', 'OK', 'Great'].map((q) => (
+          <button
+            key={q}
+            type="button"
+            className={`tt-chip ${quality === q ? 'on' : ''}`}
+            onClick={() => setQuality(q)}
+          >
+            {q}
+          </button>
+        ))}
+      </div>
+      {lowSleep && (
+        <div className="tt-muted" style={{ fontSize: 11, marginTop: 8 }}>
+          Under 7 hrs caps growth hormone & testosterone. Try a 20-min nap before today's session.
+        </div>
+      )}
+    </Card>
+  );
 }
 
 function WeeklyRecapCard({ data, onDismiss }) {
@@ -339,6 +420,17 @@ function ExerciseRow({ ex, logEntry, swap, onUpdateSet, onToggleSet, onSwap, log
             placeholder="reps"
             value={s.reps ?? ''}
             onChange={(e) => onUpdateSet(ex.id, i, 'reps', e.target.value)}
+          />
+          <input
+            type="number"
+            inputMode="numeric"
+            min="0"
+            max="10"
+            className="tt-si tt-si-rir"
+            placeholder="RIR"
+            title="Reps in reserve — how many more reps you could've done. Aim 0–2 for max growth."
+            value={s.rir ?? ''}
+            onChange={(e) => onUpdateSet(ex.id, i, 'rir', e.target.value)}
           />
           <button
             type="button"
@@ -761,6 +853,11 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
     localStorage.setItem(RECAP_KEY, getISOWeek(new Date()));
     setRecapDismissed(true);
   };
+  const [tipDismissedKey, setTipDismissedKey] = useState(() => localStorage.getItem(COACH_TIP_KEY) || '');
+  const dismissTip = () => {
+    localStorage.setItem(COACH_TIP_KEY, currentDate);
+    setTipDismissedKey(currentDate);
+  };
 
   const dow = dayOfWeek(currentDate);
   const scheduled = data.schedule?.[dow];
@@ -851,7 +948,11 @@ export function TodayScreen({ currentDate: currentDateProp, setCurrentDate: setC
         </Banner>
       )}
 
+      <CoachTipCard currentDate={currentDate} dismissedKey={tipDismissedKey} onDismiss={dismissTip} />
+
       <QuickBodyweight currentDate={currentDate} data={data} update={update} />
+
+      <SleepLogCard currentDate={currentDate} data={data} update={update} />
 
       {!scheduled || isRest ? (
         <Card>

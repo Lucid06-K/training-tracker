@@ -98,6 +98,27 @@ export const DEFAULT_OVERLOAD={upper:1,lower:2.5,endurance:0.5,sport:0};
 export const RATING_EMOJIS={1:'\u{1F634}',2:'\u{1F60A}',3:'\u{1F4AA}',4:'\u{1F525}',5:'\u{2620}\uFE0F'};
 export const RATING_LABELS={1:'Easy',2:'Moderate',3:'Good',4:'Intense',5:'Brutal'};
 
+// Evidence-based hypertrophy tips. Source: 56-bodybuilder review + Zourdos lab
+// (volume vs failure regression, 10\u201311 sets/session ceiling, \u22652x/week frequency),
+// Helms (calorie scaling), Trexler (creatine), Spector (sleep). Rotated daily.
+export const COACH_TIPS=[
+  {t:'Train close to failure',d:'Stop sets 0\u20132 reps short of failure. Stopping 5+ short cuts gains roughly in half. If your last rep is fast, you left growth on the table.'},
+  {t:'12 sets/muscle/week is plenty',d:'Top natural bodybuilders average ~12 weekly sets per muscle. Adding more sets gives diminishing \u2014 sometimes zero \u2014 extra growth.'},
+  {t:'Cap a session at ~10 sets per muscle',d:'Above 10\u201311 sets for one muscle in one session, extra sets stop driving growth. Split volume across 2 days instead.'},
+  {t:'Hit each muscle 2\u00D7 a week',d:'Splitting weekly sets across two sessions can speed gains by up to 30% vs. one big session.'},
+  {t:'Track RIR, not just reps',d:'Reps-In-Reserve is your effort gauge. Aim 0\u20132 RIR for max growth on the volume plan, 0 RIR (true failure) on the intensity plan.'},
+  {t:'Eat slow carbs + protein 1.5\u20132 hr pre-workout',d:'Then 30 min before, top up with fast carbs. The granola-bar-and-coffee-3-hours-ago plan caps your training intensity.'},
+  {t:'Protein: ~1.6 g/kg bodyweight',d:'That\u2019s the ceiling for muscle benefit. More is fine but won\u2019t add growth. As low as 1.2 g/kg still works \u2014 protein is small lever.'},
+  {t:'Cut at <0.5% bodyweight/week',d:'Bigger deficits cost muscle. Aim 250\u2013500 kcal under maintenance, no more. Recomp is realistic if you\u2019re above 20% (m) / 30% (f) body fat.'},
+  {t:'Lean? Eat at slight surplus',d:'Beginners can target ~2% bodyweight gain/month, intermediates 1%, advanced 0.5%. Below 20%/30% body fat, surplus beats recomp.'},
+  {t:'Creatine 5 g/day',d:'Cheapest legal performance lever. ~20\u201330% don\u2019t respond \u2014 judge by whether you add 2\u20133 reps at the same weight after a couple weeks.'},
+  {t:'Dark room, cool temp, earplugs',d:'A $15 eye mask + earplugs + cool room turns 7 hours in bed into restful sleep. Growth hormone and testosterone both rise with sleep quality.'},
+  {t:'20-min nap rescues a bad night',d:'4-hour sleep tanks performance ~3%; a 20-minute nap before training restores most of it.'},
+  {t:'Pick a split you\u2019ll actually do',d:'Upper/lower, push/pull/legs, full body \u2014 the difference between them is tiny. The one you stick to wins.'},
+  {t:'Beginner? 6 compound moves, 3\u00D7/wk',d:'Press, pull, squat, hinge \u2014 that\u2019s a 10+ lb muscle gain over a year if hard and consistent. Don\u2019t over-engineer it.'},
+  {t:'If your last set\u2019s reps match your first, push harder',d:'Same weight, same reps across all sets means you weren\u2019t close to failure on set 1. Last reps should be slow and ugly.'}
+];
+
 export const WARMUP_ROUTINES={
   gym:[
     {name:'Arm Circles',duration:'30s',desc:'Forward & backward'},
@@ -167,6 +188,7 @@ export function buildDefaultData() {
     logs: {},
     nutrition: {},
     bodyweight: {},
+    sleep: {},
     measurements: {},
     prs: {},
     exerciseNotes: {},
@@ -185,6 +207,7 @@ export function mergeWithDefaults(data) {
   if (!data.logs) data.logs = {};
   if (!data.nutrition) data.nutrition = {};
   if (!data.bodyweight) data.bodyweight = {};
+  if (!data.sleep) data.sleep = {};
   if (!data.measurements) data.measurements = {};
   if (!data.prs) data.prs = {};
   if (!data.exerciseNotes) data.exerciseNotes = {};
@@ -200,7 +223,7 @@ export function mergeWithDefaults(data) {
 // fields (profile, settings, schedule, templates) are taken entirely from the
 // newer side. Prevents the whole document from being clobbered when two devices
 // edit on the same day.
-const DATE_KEYED_FIELDS = ['logs', 'nutrition', 'bodyweight', 'measurements', 'prs', 'exerciseNotes'];
+const DATE_KEYED_FIELDS = ['logs', 'nutrition', 'bodyweight', 'sleep', 'measurements', 'prs', 'exerciseNotes'];
 const SINGLETON_FIELDS = ['profile', 'categories', 'schedule', 'workouts', 'customWorkouts', 'settings'];
 
 export function mergeSyncData(local, cloud, localModified = 0, cloudModified = 0) {

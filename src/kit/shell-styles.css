@@ -123,6 +123,8 @@ select.tt-input{appearance:none;-webkit-appearance:none}
 .tt-set:last-child{margin-bottom:0}
 .tt-sn{font-size:10px;color:var(--fg-3);min-width:14px;text-align:center;font-family:var(--font-mono);font-weight:600}
 .tt-si{width:58px;padding:6px 7px;font-size:12px;text-align:center;border-radius:9px;border:1px solid var(--border-2);background:var(--bg);color:var(--fg-1);font-family:inherit;font-variant-numeric:tabular-nums;outline:none}
+.tt-si-rir{width:42px;color:var(--fg-2)}
+.tt-si-rir::placeholder{font-size:10px;letter-spacing:.04em}
 .tt-si:focus{border-color:var(--accent)}
 .tt-chk{width:26px;height:26px;border-radius:999px;border:2px solid var(--border-2);background:transparent;cursor:pointer;display:flex;align-items:center;justify-content:center;color:transparent;font-weight:700;font-size:14px;flex-shrink:0;margin-left:auto;transition:all var(--dur) var(--ease-spring)}
 .tt-chk.on{background:var(--success);border-color:var(--success);color:#fff;box-shadow:0 0 0 3px var(--success-tint)}
